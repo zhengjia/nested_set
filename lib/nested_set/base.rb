@@ -639,6 +639,13 @@ module CollectiveIdea #:nodoc:
                 # so sorting puts both the intervals and their boundaries in order
                 a, b, c, d = [self[left_column_name], self[right_column_name], bound, other_bound].sort
 
+                # select the rows in the model between a and d, and apply a lock
+                self.class.base_class.find(:all,
+                  :select => primary_key_column_name,
+                  :conditions => ["#{quoted_left_column_name} >= :a and #{quoted_right_column_name} <= :d", {:a => a, :d => d}],
+                  :lock => true
+                )
+
                 new_parent = case position
                   when :child;  target.id
                   when :root;   nil
