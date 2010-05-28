@@ -805,6 +805,20 @@ class NestedSetTest < ActiveSupport::TestCase
     check_scoped_structure(Category.root.self_and_descendants, levels)
   end
 
+  def test_map_with_level
+    expected = [
+      [0, "Top Level"],
+      [1, "Child 1"],
+      [1, "Child 2"],
+      [2, "Child 2.1"],
+      [1, "Child 3" ]
+    ]
+    actual = Category.map_with_level Category.root.self_and_descendants do |i, level|
+      [level, i.name]
+    end
+    assert_equal expected, actual
+  end
+
   def test_model_with_attr_accessible
     model = Class.new(ActiveRecord::Base)
     model.set_table_name 'categories'

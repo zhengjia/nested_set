@@ -255,6 +255,14 @@ module CollectiveIdea #:nodoc:
             end
           end
 
+          def map_with_level(objects = nil)
+            result = []
+            each_with_level objects do |object, level|
+              result << yield(object, level)
+            end
+            result
+          end
+
           def before_move(*args, &block)
             set_callback :move, :before, *args, &block
           end
