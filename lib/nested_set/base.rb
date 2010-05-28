@@ -516,8 +516,8 @@ module CollectiveIdea #:nodoc:
           end
 
           def to_text
-            self_and_descendants.map do |node|
-              "#{'*'*(node.level+1)} #{node.id} #{node.to_s} (#{node.parent_id}, #{node.left}, #{node.right})"
+            self.class.map_with_level(self_and_descendants) do |node,level|
+              "#{'*'*(level+1)} #{node.id} #{node.to_s} (#{node.parent_id}, #{node.left}, #{node.right})"
             end.join("\n")
           end
 
