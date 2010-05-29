@@ -44,7 +44,7 @@ module CollectiveIdea #:nodoc:
           # to acts_as_nested_set models
           def acts_as_nested_set(options = {})
             options = {
-              :primary_key_column => 'id',
+              :primary_key_column => self.primary_key,
               :parent_column => 'parent_id',
               :left_column => 'lft',
               :right_column => 'rgt',
