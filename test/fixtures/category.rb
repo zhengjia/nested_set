@@ -14,3 +14,9 @@ class Category < ActiveRecord::Base
   end
 
 end
+
+class Category_NoToArray < Category
+  def to_a
+    raise 'to_a called'
+  end
+end

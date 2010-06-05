@@ -113,4 +113,15 @@ class HelperTest < ActionView::TestCase
     assert_equal html, "<ul><li>Top Level 2</li><li>Top Level</li><ul><li>Child 3</li><li>Child 2</li><ul><li>Child 2.1</li></ul><li>Child 1</li></ul></ul>"
   end
 
+  def test_nested_set_options_does_not_call_to_a
+    expected = [
+      ['Child 2', 3],
+      ['Child 2.1', 4]
+    ]
+    actual = nested_set_options Category_NoToArray.find(3) do |c|
+      c.name
+    end
+    assert_equal expected, actual
+  end
+
 end
