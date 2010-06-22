@@ -94,6 +94,7 @@ module CollectiveIdea #:nodoc:
             
               scope :roots, :conditions => {parent_column_name => nil}, :order => quoted_left_column_name
               scope :leaves, :conditions => "#{quoted_right_column_name} - #{quoted_left_column_name} = 1", :order => quoted_left_column_name
+              scope :with_depth, proc {|level| where(:depth => level).order("lft") }
 
               define_callbacks("before_move", "after_move")
             end

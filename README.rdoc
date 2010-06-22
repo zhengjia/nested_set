@@ -10,7 +10,7 @@ This is a new implementation of nested set based off of BetterNestedSet that fix
 
 Install as a plugin:
 
-  script/plugin install git://github.com/collectiveidea/awesome_nested_set.git
+  rails plugin install git://github.com/galetahub/awesome_nested_set.git
   
 == Usage
 
@@ -23,6 +23,9 @@ To make use of awesome_nested_set, your model needs to have 3 fields: lft, rgt, 
         t.integer :parent_id
         t.integer :lft
         t.integer :rgt
+        
+        # Uncomment it to store item level
+        # t.integer :depth
       end
     end
 
@@ -37,7 +40,7 @@ Enable the nested set functionality by declaring acts_as_nested_set on your mode
     acts_as_nested_set
   end
   
-Run `rake rdoc` to generate the API docs and see CollectiveIdea::Acts::NestedSet::SingletonMethods for more info.
+Run `rake rdoc` to generate the API docs and see CollectiveIdea::Acts::NestedSet::Base::SingletonMethods for more info.
 
 == Conversion from other trees
 
@@ -84,4 +87,4 @@ If you want to contribute an enhancement or a fix:
 3. Commit the changes without making changes to the Rakefile, VERSION, or any other files that aren't related to your enhancement or fix
 4. Send a pull request.
 
-Copyright ©2008 Collective Idea, released under the MIT license
+Copyright ©2010 Collective Idea, released under the MIT license
