@@ -1,1 +1,2 @@
-require File.dirname(__FILE__) + "/rails/init"  
+# encoding: utf-8
+require 'awesome_nested_set'

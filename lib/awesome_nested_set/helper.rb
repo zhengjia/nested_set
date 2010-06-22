@@ -1,3 +1,4 @@
+# encoding: utf-8
 module CollectiveIdea #:nodoc:
   module Acts #:nodoc:
     module NestedSet #:nodoc:
