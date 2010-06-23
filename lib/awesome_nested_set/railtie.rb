@@ -7,18 +7,14 @@ module CollectiveIdea
       if defined? Rails::Railtie
         require 'rails'
         class Railtie < Rails::Railtie
-          initializer "awesome_nested_set.initialization" do
-            CollectiveIdea::Acts::NestedSet::Railtie.insert
-          end
-        end
-      end
-
-      class Railtie
-        def self.insert
-          ActiveRecord::Base.send(:include, CollectiveIdea::Acts::NestedSet::Base)
-          
-          if Object.const_defined?("ActionView")
-            ActionView::Base.send(:include, CollectiveIdea::Acts::NestedSet::Helper)
+          config.after_initialize do
+            ActiveSupport.on_load :active_record do
+              ActiveRecord::Base.send(:include, CollectiveIdea::Acts::NestedSet::Base)
+            end
+            
+            if Object.const_defined?("ActionView")
+              ActionView::Base.send(:include, CollectiveIdea::Acts::NestedSet::Helper)
+            end
           end
         end
       end
