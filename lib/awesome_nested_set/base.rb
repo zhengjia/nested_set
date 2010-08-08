@@ -118,10 +118,9 @@ module CollectiveIdea #:nodoc:
           end
 
           def left_and_rights_valid?
-            count(
-              :joins => "LEFT OUTER JOIN #{quoted_table_name} AS parent ON " +
-                "#{quoted_table_name}.#{quoted_parent_column_name} = parent.#{primary_key}",
-              :conditions =>
+            joins("LEFT OUTER JOIN #{quoted_table_name} AS parent ON " +
+                "#{quoted_table_name}.#{quoted_parent_column_name} = parent.#{primary_key}").
+            where(
                 "#{quoted_table_name}.#{quoted_left_column_name} IS NULL OR " +
                 "#{quoted_table_name}.#{quoted_right_column_name} IS NULL OR " +
                 "#{quoted_table_name}.#{quoted_left_column_name} >= " +
@@ -129,7 +128,7 @@ module CollectiveIdea #:nodoc:
                 "(#{quoted_table_name}.#{quoted_parent_column_name} IS NOT NULL AND " +
                   "(#{quoted_table_name}.#{quoted_left_column_name} <= parent.#{quoted_left_column_name} OR " +
                   "#{quoted_table_name}.#{quoted_right_column_name} >= parent.#{quoted_right_column_name}))"
-            ) == 0
+            ).exists? == false
           end
 
           def no_duplicates_for_columns?
@@ -325,9 +324,7 @@ module CollectiveIdea #:nodoc:
 
           # Returns the array of all parents and self
           def self_and_ancestors
-            nested_set_scope.scoped.where(
-              "#{self.class.quoted_table_name}.#{quoted_left_column_name} <= ? AND #{self.class.quoted_table_name}.#{quoted_right_column_name} >= ?", left, right
-            )
+            nested_set_scope.scoped.where("#{q_left} <= ? AND #{q_right} >= ?", left, right)
           end
 
           # Returns an array of all parents
@@ -347,7 +344,7 @@ module CollectiveIdea #:nodoc:
 
           # Returns a set of all of its nested children which do not have children
           def leaves
-            descendants.scoped.where("#{self.class.quoted_table_name}.#{quoted_right_column_name} - #{self.class.quoted_table_name}.#{quoted_left_column_name} = 1")
+            descendants.scoped.where("#{q_right} - #{q_left} = 1")
           end
 
           # Returns the level of this object in the tree
@@ -358,9 +355,7 @@ module CollectiveIdea #:nodoc:
 
           # Returns a set of itself and all of its nested children
           def self_and_descendants
-            nested_set_scope.scoped.where(
-              "#{self.class.quoted_table_name}.#{quoted_left_column_name} >= ? AND #{self.class.quoted_table_name}.#{quoted_right_column_name} <= ?", left, right
-            )
+            nested_set_scope.scoped.where("#{q_left} >= ? AND #{q_right} <= ?", left, right)
           end
 
           # Returns a set of all of its children and nested children
@@ -393,13 +388,12 @@ module CollectiveIdea #:nodoc:
 
           # Find the first sibling to the left
           def left_sibling
-            siblings.first(:conditions => ["#{self.class.quoted_table_name}.#{quoted_left_column_name} < ?", left],
-              :order => "#{self.class.quoted_table_name}.#{quoted_left_column_name} DESC")
+            siblings.where("#{q_left} < ?", left).reverse_order.first
           end
 
           # Find the first sibling to the right
           def right_sibling
-            siblings.first(:conditions => ["#{self.class.quoted_table_name}.#{quoted_left_column_name} > ?", left])
+            siblings.where("#{q_left} > ?", left).first
           end
 
           # Shorthand method for finding the left sibling and moving to the left of it.
@@ -448,6 +442,14 @@ module CollectiveIdea #:nodoc:
 
         protected
 
+          def q_left
+            "#{self.class.quoted_table_name}.#{quoted_left_column_name}"
+          end
+
+          def q_right
+            "#{self.class.quoted_table_name}.#{quoted_right_column_name}"
+          end
+
           def without_self(scope)
             scope.where("#{self.class.quoted_table_name}.#{self.class.primary_key} != ?", self)
           end
@@ -456,12 +458,16 @@ module CollectiveIdea #:nodoc:
           # the base ActiveRecord class, using the :scope declared in the acts_as_nested_set
           # declaration.
           def nested_set_scope
-            options = {:order => quoted_left_column_name}
-            scopes = Array(acts_as_nested_set_options[:scope])
-            options[:conditions] = scopes.inject({}) do |conditions,attr|
+            scope = self.class.base_class.order(q_left)
+            conditions = Array(acts_as_nested_set_options[:scope]).inject({}) do |conditions, attr|
               conditions.merge attr => self[attr]
-            end unless scopes.empty?
-            self.class.base_class.scoped options
+            end
+
+            if conditions.empty?
+              scope
+            else
+              scope.where(conditions)
+            end
           end
 
           def store_new_parent
@@ -497,10 +503,7 @@ module CollectiveIdea #:nodoc:
                   model.destroy
                 end
               else
-                nested_set_scope.delete_all(
-                  ["#{quoted_left_column_name} > ? AND #{quoted_right_column_name} < ?",
-                    left, right]
-                )
+                nested_set_scope.delete_all(["#{q_left} > ? AND #{q_right} < ?", left, right])
               end
 
               # update lefts and rights for remaining nodes
