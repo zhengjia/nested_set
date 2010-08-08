@@ -458,16 +458,11 @@ module CollectiveIdea #:nodoc:
           # the base ActiveRecord class, using the :scope declared in the acts_as_nested_set
           # declaration.
           def nested_set_scope
-            scope = self.class.base_class.order(q_left)
             conditions = Array(acts_as_nested_set_options[:scope]).inject({}) do |conditions, attr|
               conditions.merge attr => self[attr]
             end
 
-            if conditions.empty?
-              scope
-            else
-              scope.where(conditions)
-            end
+            self.class.base_class.order(q_left).where(conditions)
           end
 
           def store_new_parent
