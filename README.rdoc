@@ -1,6 +1,8 @@
 = AwesomeNestedSet
 
-Awesome Nested Set is an implementation of the nested set pattern for ActiveRecord models. It is replacement for acts_as_nested_set and BetterNestedSet, but awesomer. It supports Rails 2.1 and later.
+Awesome Nested Set is an implementation of the nested set pattern for ActiveRecord models. It is replacement for acts_as_nested_set and BetterNestedSet, but awesomer. It supports Rails 3.0.rc and later.
+
+See, it's Rails 3 only.
 
 == What makes this so awesome?
 
@@ -8,10 +10,14 @@ This is a new implementation of nested set based off of BetterNestedSet that fix
 
 == Installation
 
-Install as a plugin:
+The plugin is available as a gem:
 
-  rails plugin install git://github.com/galetahub/awesome_nested_set.git
-  
+  gem 'be9-awesome_nested_set'
+
+Or install as a plugin:
+
+  rails plugin install git://github.com/be9/awesome_nested_set.git
+
 == Usage
 
 To make use of awesome_nested_set, your model needs to have 3 fields: lft, rgt, and parent_id:

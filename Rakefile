@@ -9,23 +9,23 @@ end
 require 'rake/testtask'
 require 'rake/rdoctask'
 require 'rcov/rcovtask'
-#require "load_multi_rails_rake_tasks" 
+#require "load_multi_rails_rake_tasks"
 
 Jeweler::Tasks.new do |s|
-  s.name = "awesome_nested_set"
+  s.name = "be9-awesome_nested_set"
   s.summary = "An awesome nested set implementation for Active Record"
   s.description = s.summary
   s.email = "info@collectiveidea.com"
   s.homepage = "http://github.com/collectiveidea/awesome_nested_set"
   s.authors = ["Brandon Keepers", "Daniel Morrison"]
-  s.add_dependency "activerecord", ['>= 1.1']
+  s.add_dependency "activerecord", ['>= 3.0.0.rc']
   s.has_rdoc = true
   s.extra_rdoc_files = [ "README.rdoc"]
   s.rdoc_options = ["--main", "README.rdoc", "--inline-source", "--line-numbers"]
   s.test_files = Dir['test/**/*.{yml,rb}']
 end
  Jeweler::GemcutterTasks.new
- 
+
 desc 'Default: run unit tests.'
 task :default => :test
 
