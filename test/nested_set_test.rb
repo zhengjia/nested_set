@@ -767,6 +767,10 @@ class NestedSetTest < ActiveSupport::TestCase
     end
   end
 
+  def test_valid_with_default_scope
+    assert Category_DefaultScope.valid?
+  end
+
   def test_each_with_level
     levels = [
       [0, "Top Level"],

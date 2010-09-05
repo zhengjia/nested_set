@@ -20,3 +20,7 @@ class Category_NoToArray < Category
     raise 'to_a called'
   end
 end
+
+class Category_DefaultScope < Category
+  default_scope order('categories.id ASC')
+end
