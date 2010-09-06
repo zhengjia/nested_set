@@ -680,6 +680,12 @@ class NestedSetTest < ActiveSupport::TestCase
     assert Category.valid?
   end
 
+  def test_destroy_on_multiple_records_without_reload_does_not_invalidate
+    Category.acts_as_nested_set_options[:dependent] = :destroy
+    [categories(:child_1), categories(:child_2)].each(&:destroy)
+    assert Category.valid?
+  end
+
   def test_assigning_parent_id_on_create
     category = Category.create!(:name => "Child", :parent_id => categories(:child_2).id)
     assert_equal categories(:child_2), category.parent

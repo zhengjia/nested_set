@@ -567,6 +567,7 @@ module CollectiveIdea #:nodoc:
           # back to the left so the counts still work.
           def destroy_descendants
             return if right.nil? || left.nil? || skip_before_destroy
+            reload_nested_set
 
             self.class.base_class.transaction do
               if acts_as_nested_set_options[:dependent] == :destroy
