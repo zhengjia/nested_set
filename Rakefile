@@ -1,57 +1,53 @@
 # encoding: utf-8
 require 'rubygems'
+require 'rake'
+
 begin
   require 'jeweler'
+  Jeweler::Tasks.new do |gem|
+    gem.name = "nested_set"
+    gem.summary = "An awesome nested set implementation for Active Record"
+    gem.description = s.summary
+    gem.email = "info@collectiveidea.com"
+    gem.homepage = "http://github.com/collectiveidea/awesome_nested_set"
+    gem.authors = ["Brandon Keepers", "Daniel Morrison"]
+    gem.add_dependency "activerecord", ['>= 3.0.0.rc']
+  end
+  Jeweler::GemcutterTasks.new
 rescue LoadError
-  puts "Jeweler not available. Install it with: sudo gem install jeweler"
-  exit 1
+  puts "Jeweler (or a dependency) not available. Install it with: gem install jeweler"
 end
+
 require 'rake/testtask'
-require 'rake/rdoctask'
-require 'rcov/rcovtask'
-#require "load_multi_rails_rake_tasks"
-
-Jeweler::Tasks.new do |s|
-  s.name = "be9-awesome_nested_set"
-  s.summary = "An awesome nested set implementation for Active Record"
-  s.description = s.summary
-  s.email = "info@collectiveidea.com"
-  s.homepage = "http://github.com/collectiveidea/awesome_nested_set"
-  s.authors = ["Brandon Keepers", "Daniel Morrison"]
-  s.add_dependency "activerecord", ['>= 3.0.0.rc']
-  s.has_rdoc = true
-  s.extra_rdoc_files = [ "README.rdoc"]
-  s.rdoc_options = ["--main", "README.rdoc", "--inline-source", "--line-numbers"]
-  s.test_files = Dir['test/**/*.{yml,rb}']
+Rake::TestTask.new(:test) do |test|
+  test.libs << 'lib' << 'test'
+  test.pattern = 'test/**/test_*.rb'
+  test.verbose = true
 end
- Jeweler::GemcutterTasks.new
 
-desc 'Default: run unit tests.'
+begin
+  require 'rcov/rcovtask'
+  Rcov::RcovTask.new do |test|
+    test.libs << 'test'
+    test.pattern = 'test/**/test_*.rb'
+    test.verbose = true
+  end
+rescue LoadError
+  task :rcov do
+    abort "RCov is not available. In order to run rcov, you must: sudo gem install spicycode-rcov"
+  end
+end
+
+task :test => :check_dependencies
+
 task :default => :test
 
-desc 'Test the awesome_nested_set plugin.'
-Rake::TestTask.new(:test) do |t|
-  t.libs += ['lib', 'test']
-  t.pattern = 'test/**/*_test.rb'
-  t.verbose = true
-end
+require 'rake/rdoctask'
+Rake::RDocTask.new do |rdoc|
+  version = File.exist?('VERSION') ? File.read('VERSION') : ""
 
-desc 'Generate documentation for the awesome_nested_set plugin.'
-Rake::RDocTask.new(:rdoc) do |rdoc|
   rdoc.rdoc_dir = 'rdoc'
-  rdoc.title    = 'AwesomeNestedSet'
-  rdoc.options << '--line-numbers' << '--inline-source'
-  rdoc.rdoc_files.include('README.rdoc')
+  rdoc.title = "nested_set #{version}"
+  rdoc.rdoc_files.include('README*')
   rdoc.rdoc_files.include('lib/**/*.rb')
-end
-
-namespace :test do
-  desc "just rcov minus html output"
-  Rcov::RcovTask.new(:coverage) do |t|
-    t.libs << 'test'
-    t.test_files = FileList['test/**/*_test.rb']
-    t.output_dir = 'coverage'
-    t.verbose = true
-    t.rcov_opts = %w(--exclude test,/usr/lib/ruby,/Library/Ruby,lib/awesome_nested_set/named_scope.rb --sort coverage)
-  end
 end
