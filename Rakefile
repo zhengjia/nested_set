@@ -7,7 +7,7 @@ begin
   Jeweler::Tasks.new do |gem|
     gem.name = "nested_set"
     gem.summary = "An awesome nested set implementation for Active Record"
-    gem.description = s.summary
+    gem.description = gem.summary
     gem.email = "info@collectiveidea.com"
     gem.homepage = "http://github.com/collectiveidea/awesome_nested_set"
     gem.authors = ["Brandon Keepers", "Daniel Morrison"]
