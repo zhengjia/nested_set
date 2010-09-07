@@ -15,6 +15,10 @@ module CollectiveIdea
             ActionView::Base.send(:include, CollectiveIdea::Acts::NestedSet::Helper)
           end
         end
+
+        def self.extend_active_record
+          ActiveRecord::Base.send :include, CollectiveIdea::Acts::NestedSet::Base
+        end
       end
     end
   end

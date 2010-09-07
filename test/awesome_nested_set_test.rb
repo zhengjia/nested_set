@@ -164,8 +164,8 @@ class AwesomeNestedSetTest < ActiveSupport::TestCase
   end
 
   def test_leaves
-    leaves = [categories(:child_1), categories(:child_2_1), categories(:child_3), categories(:top_level_2)]
-    assert categories(:top_level).leaves, leaves
+    leaves = [categories(:child_1), categories(:child_2_1), categories(:child_3)]
+    assert_equal categories(:top_level).leaves, leaves
   end
 
   def test_level
