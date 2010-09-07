@@ -5,7 +5,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{nested_set}
-  s.version = "1.5.0"
+  s.version = "1.5.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Brandon Keepers", "Daniel Morrison"]
@@ -29,16 +29,17 @@ Gem::Specification.new do |s|
      "lib/nested_set/descendants.rb",
      "lib/nested_set/helper.rb",
      "lib/nested_set/railtie.rb",
+     "nested_set.gemspec",
      "rails/init.rb",
      "test/application.rb",
-     "test/nested_set/helper_test.rb",
-     "test/nested_set_test.rb",
      "test/db/database.yml",
      "test/db/schema.rb",
      "test/fixtures/categories.yml",
      "test/fixtures/category.rb",
      "test/fixtures/departments.yml",
      "test/fixtures/notes.yml",
+     "test/nested_set/helper_test.rb",
+     "test/nested_set_test.rb",
      "test/test_helper.rb"
   ]
   s.homepage = %q{http://github.com/skyeagle/nested_set}
@@ -48,10 +49,10 @@ Gem::Specification.new do |s|
   s.summary = %q{An awesome nested set implementation for Active Record}
   s.test_files = [
     "test/db/schema.rb",
+     "test/nested_set_test.rb",
      "test/application.rb",
+     "test/nested_set/helper_test.rb",
      "test/fixtures/category.rb",
-     "test/awesome_nested_set/helper_test.rb",
-     "test/awesome_nested_set_test.rb",
      "test/test_helper.rb"
   ]
 
