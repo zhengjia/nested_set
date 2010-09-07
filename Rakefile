@@ -9,7 +9,7 @@ begin
     gem.summary = "An awesome nested set implementation for Active Record"
     gem.description = gem.summary
     gem.email = "info@collectiveidea.com"
-    gem.homepage = "http://github.com/collectiveidea/awesome_nested_set"
+    gem.homepage = "http://github.com/skyeagle/nested_set"
     gem.authors = ["Brandon Keepers", "Daniel Morrison"]
     gem.add_dependency "activerecord", ['>= 3.0.0.rc']
   end
@@ -21,7 +21,7 @@ end
 require 'rake/testtask'
 Rake::TestTask.new(:test) do |test|
   test.libs << 'lib' << 'test'
-  test.pattern = 'test/**/test_*.rb'
+  test.pattern = 'test/**/*_test.rb'
   test.verbose = true
 end
 
@@ -29,7 +29,7 @@ begin
   require 'rcov/rcovtask'
   Rcov::RcovTask.new do |test|
     test.libs << 'test'
-    test.pattern = 'test/**/test_*.rb'
+    test.pattern = 'test/**/*_test.rb'
     test.verbose = true
   end
 rescue LoadError

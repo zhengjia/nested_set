@@ -18,7 +18,7 @@ class RenamedColumns < ActiveRecord::Base
   acts_as_nested_set :parent_column => 'mother_id', :left_column => 'red', :right_column => 'black'
 end
 
-class AwesomeNestedSetTest < ActiveSupport::TestCase
+class NestedSetTest < ActiveSupport::TestCase
 
   def test_left_column_default
     assert_equal 'lft', Default.acts_as_nested_set_options[:left_column]

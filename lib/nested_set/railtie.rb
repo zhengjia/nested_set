@@ -1,5 +1,5 @@
 # encoding: utf-8
-require 'awesome_nested_set'
+require 'nested_set'
 require 'rails'
 
 module CollectiveIdea

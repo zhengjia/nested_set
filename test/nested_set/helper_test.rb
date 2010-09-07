@@ -3,10 +3,10 @@ require 'test_helper'
 module CollectiveIdea
   module Acts #:nodoc:
     module NestedSet #:nodoc:
-      class AwesomeNestedSetTest < ActiveSupport::TestCase
+      class NestedSetTest < ActiveSupport::TestCase
         include Helper
         fixtures :categories
-        
+
         def test_nested_set_options
           expected = [
             [" Top Level", 1],
@@ -21,7 +21,7 @@ module CollectiveIdea
           end
           assert_equal expected, actual
         end
-        
+
         def test_nested_set_options_with_mover
           expected = [
             [" Top Level", 1],
@@ -34,7 +34,7 @@ module CollectiveIdea
           end
           assert_equal expected, actual
         end
-        
+
       end
     end
   end

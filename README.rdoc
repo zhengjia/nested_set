@@ -1,26 +1,22 @@
-= AwesomeNestedSet
+= NestedSet
 
-Awesome Nested Set is an implementation of the nested set pattern for ActiveRecord models. It is replacement for acts_as_nested_set and BetterNestedSet, but awesomer. It supports Rails 3.0.rc and later.
+Nested Set is an implementation of the nested set pattern for ActiveRecord models. It is replacement for acts_as_nested_set and BetterNestedSet, but awesomer. It supports Rails 3.0.rc and later.
 
 See, it's Rails 3 only.
-
-== What makes this so awesome?
-
-This is a new implementation of nested set based off of BetterNestedSet that fixes some bugs, removes tons of duplication, adds a few useful methods, and adds STI support.
 
 == Installation
 
 The plugin is available as a gem:
 
-  gem 'be9-awesome_nested_set'
+  gem 'nested_set'
 
 Or install as a plugin:
 
-  rails plugin install git://github.com/be9/awesome_nested_set.git
+  rails plugin install git://github.com/skyeagle/nested_set.git
 
 == Usage
 
-To make use of awesome_nested_set, your model needs to have 3 fields: lft, rgt, and parent_id:
+To make use of nested_set, your model needs to have 3 fields: lft, rgt, and parent_id:
 
   class CreateCategories < ActiveRecord::Migration
     def self.up
@@ -29,7 +25,7 @@ To make use of awesome_nested_set, your model needs to have 3 fields: lft, rgt, 
         t.integer :parent_id
         t.integer :lft
         t.integer :rgt
-        
+
         # Uncomment it to store item level
         # t.integer :depth
       end
@@ -53,8 +49,8 @@ Run `rake rdoc` to generate the API docs and see CollectiveIdea::Acts::NestedSet
 Coming from acts_as_tree or another system where you only have a parent_id? No problem. Simply add the lft & rgt fields as above, and then run
 
   Category.rebuild!
-  
-Your tree be converted to a valid nested set. Awesome!
+
+Your tree be converted to a valid nested set.
 
 == View Helper
 
