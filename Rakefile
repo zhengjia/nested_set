@@ -13,6 +13,7 @@ begin
     gem.authors = ["Brandon Keepers", "Daniel Morrison"]
     gem.add_dependency "railties", ['>= 3.0.0.rc']
     gem.add_dependency "activerecord", ['>= 3.0.0.rc']
+    gem.add_development_dependency "sqlite3-ruby"
   end
   Jeweler::GemcutterTasks.new
 rescue LoadError
