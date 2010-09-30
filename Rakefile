@@ -16,6 +16,7 @@ begin
     gem.add_development_dependency "sqlite3-ruby"
     gem.add_development_dependency "actionpack", ['>= 3.0.0.rc']
     gem.add_development_dependency "activesupport", ['>= 3.0.0.rc']
+    gem.add_development_dependency "jeweler"
   end
   Jeweler::GemcutterTasks.new
 rescue LoadError
