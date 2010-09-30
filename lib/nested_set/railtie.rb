@@ -1,6 +1,6 @@
 # encoding: utf-8
 require 'nested_set'
-require 'rails'
+require 'rails/railtie'
 
 module CollectiveIdea
   module Acts
