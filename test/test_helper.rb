@@ -4,6 +4,7 @@ $:.unshift(plugin_test_dir + '/../lib')
 
 require 'rubygems'
 require 'test/unit'
+require 'logger'
 require 'active_support'
 require 'active_support/test_case'
 require 'active_record'
