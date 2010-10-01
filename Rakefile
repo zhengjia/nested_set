@@ -11,11 +11,11 @@ begin
     gem.email = "info@collectiveidea.com"
     gem.homepage = "http://github.com/skyeagle/nested_set"
     gem.authors = ["Brandon Keepers", "Daniel Morrison"]
-    gem.add_dependency "railties", ['>= 3.0.0.rc']
-    gem.add_dependency "activerecord", ['>= 3.0.0.rc']
+    gem.add_dependency "railties", ['>= 3.0.0']
+    gem.add_dependency "activerecord", ['>= 3.0.0']
     gem.add_development_dependency "sqlite3-ruby"
-    gem.add_development_dependency "actionpack", ['>= 3.0.0.rc']
-    gem.add_development_dependency "activesupport", ['>= 3.0.0.rc']
+    gem.add_development_dependency "actionpack", ['>= 3.0.0']
+    gem.add_development_dependency "activesupport", ['>= 3.0.0']
     gem.add_development_dependency "jeweler"
   end
   Jeweler::GemcutterTasks.new
