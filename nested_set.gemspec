@@ -19,6 +19,7 @@ Gem::Specification.new do |s|
     ".autotest",
      ".gitignore",
      "Gemfile",
+     "Gemfile.lock",
      "MIT-LICENSE",
      "README.rdoc",
      "Rakefile",
