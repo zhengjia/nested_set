@@ -26,9 +26,16 @@ module CollectiveIdea #:nodoc:
           items = Array(class_or_item)
           result = []
           items.each do |root|
+            levels = []
             result += root.self_and_descendants.map do |i|
+              if level = levels.index(i.parent_id)
+                levels.slice!((level + 1)..-1)
+              else
+                levels << i.parent_id
+                level = levels.size - 1
+              end
               if mover.nil? || mover.new_record? || mover.move_possible?(i)
-                [yield(i), i.id]
+                [yield(i, level), i.id]
               end
             end.compact
           end
