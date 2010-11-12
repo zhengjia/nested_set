@@ -5,11 +5,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{nested_set}
-  s.version = "1.5.3"
+  s.version = "1.5.4"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Brandon Keepers", "Daniel Morrison"]
-  s.date = %q{2010-11-10}
+  s.date = %q{2010-11-12}
   s.description = %q{An awesome nested set implementation for Active Record}
   s.email = %q{info@collectiveidea.com}
   s.extra_rdoc_files = [
