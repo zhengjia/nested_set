@@ -62,6 +62,13 @@ Example usage:
 
   <%= select_tag 'parent_id', options_for_select(nested_set_options(Category) {|i| "#{'-' * i.level} #{i.name}" } ) %>
 
+or sorted select:
+
+  <%= f.select :parent_id, sorted_nested_set_options(Category, lambda(&:name)) {|i| "#{'-' * i.level} #{i.name}" } %>
+
+  <% sort_method = lambda{|x, y| x.name.downcase <=> y.name.downcase} %>
+  <%= select_tag 'parent_id', options_for_select(sorted_nested_set_options(Category, sort_method){|i| "#{'-' * i.level} #{i.name}" } ) %>
+
 See CollectiveIdea::Acts::NestedSet::Helper for more information about the helpers.
 
 == References
