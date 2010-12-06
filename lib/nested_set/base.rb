@@ -135,29 +135,7 @@ module CollectiveIdea #:nodoc:
           #   Categories.find(42).descendants.arrange
           #   Categories.find(42).self_and_descendants.arrange
           #
-          # This arranged hash can be rendered with some recursive render_tree helper:
-          #
-          # == Params
-          #  * +hash+ - Hash or arranged nodes, i.e. Category.arranged
-          #  * +options+ - HTML options for root ul node
-          #  * +&block+ - A block that will be used to display node
-          #
-          # == Usage
-          #
-          #   arranged_nodes = Category.arranged
-          #
-          #   <%= render_tree arranged_nodes do |node| %>
-          #     <li><%= node.name %></li>
-          #   <% end %>
-          #
-          #  def render_tree hash, options = {}, &block
-          #    content_tag :ul, options do
-          #      hash.each do |record, children|
-          #        block.call record, render_tree(children, &block)
-          #      end
-          #    end if hash.present?
-          #  end
-          #
+          # This arranged hash can be rendered with recursive render_tree helper
           def arrange
             nodes = order(:lft).all
             arranged = ActiveSupport::OrderedHash.new

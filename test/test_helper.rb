@@ -9,6 +9,10 @@ require 'active_support'
 require 'active_support/test_case'
 require 'active_record'
 require 'action_pack'
+require 'action_view'
+require 'action_view/base'
+require 'action_view/template/handlers/erb'
+require 'action_view/test_case'
 require 'nested_set'
 
 CollectiveIdea::Acts::NestedSet::Railtie.extend_active_record

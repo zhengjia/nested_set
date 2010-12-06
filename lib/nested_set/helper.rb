@@ -90,6 +90,31 @@ module CollectiveIdea #:nodoc:
           end
           result
         end
+
+        # Recursively render arranged nodes hash
+        #
+        # == Params
+        #  * +hash+ - Hash or arranged nodes, i.e. Category.arranged
+        #  * +options+ - HTML options for root ul node
+        #  * +&block+ - A block that will be used to display node
+        #
+        # == Usage
+        #
+        #   arranged_nodes = Category.arranged
+        #
+        #   <%= render_tree arranged_nodes do |node, child| %>
+        #     <li><%= node.name %></li>
+        #     <%= child %>
+        #   <% end %>
+        #
+        def render_tree hash, options = {}, &block
+          content_tag :ul, options do
+            hash.each do |record, children|
+              block.call record, render_tree(children, &block)
+            end
+          end if hash.present?
+        end
+
       end
     end
   end
