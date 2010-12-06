@@ -113,6 +113,65 @@ module CollectiveIdea #:nodoc:
             roots.first
           end
 
+          # Returns arranged nodes hash. Requires depth cache.
+          # I.e. you have this tree:
+          #
+          #   1
+          #     2
+          #     3
+          #       4
+          #         5
+          #       6
+          #   7
+          #
+          # Hash will looks like:
+          #
+          #   {1 => {2 => {}, 3 => {4 => {5 => {}}, 6 => {}}}, 7 => {}}
+          #
+          # == Usage:
+          #
+          #   Categories.arrange
+          #   Categories.find(42).children.arrange
+          #   Categories.find(42).descendants.arrange
+          #   Categories.find(42).self_and_descendants.arrange
+          #
+          # This arranged hash can be rendered with some recursive render_tree helper:
+          #
+          # == Params
+          #  * +hash+ - Hash or arranged nodes, i.e. Category.arranged
+          #  * +options+ - HTML options for root ul node
+          #  * +&block+ - A block that will be used to display node
+          #
+          # == Usage
+          #
+          #   arranged_nodes = Category.arranged
+          #
+          #   <%= render_tree arranged_nodes do |node| %>
+          #     <li><%= node.name %></li>
+          #   <% end %>
+          #
+          #  def render_tree hash, options = {}, &block
+          #    content_tag :ul, options do
+          #      hash.each do |record, children|
+          #        block.call record, render_tree(children, &block)
+          #      end
+          #    end if hash.present?
+          #  end
+          #
+          def arrange
+            nodes = order(:lft).all
+            arranged = ActiveSupport::OrderedHash.new
+            insertion_points = [arranged]
+            depth = nodes.first.depth
+            nodes.each do |node|
+              insertion_points.push insertion_points.last.values.last if node.depth > depth
+              (depth - node.depth).times { insertion_points.pop } if node.depth < depth
+              insertion_points.last.merge! node => ActiveSupport::OrderedHash.new
+              depth = node.depth
+            end
+            arranged
+          end
+
           def valid?
             left_and_rights_valid? && no_duplicates_for_columns? && all_roots_valid?
           end

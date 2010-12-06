@@ -71,6 +71,10 @@ module CollectiveIdea
           assert_equal expected, actual
         end
 
+        #def test_render_tree
+          #p render_tree(Category.arrange)
+        #end
+
       end
     end
   end

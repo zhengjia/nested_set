@@ -801,4 +801,55 @@ class NestedSetTest < ActiveSupport::TestCase
   ensure
     Category.class_eval { reset_callbacks :move }
   end
+
+  # helper to turn arranged hash to levels array
+  def hash_to_array hash, level = 0
+    array = []
+    hash.each do |key, value|
+      array.push [level, "#{key}"]
+      array += hash_to_array(value, level.next)
+    end
+    array
+  end
+
+  def test_arrangement
+    levels = [
+      [0, "Top Level"],
+      [1, "Child 1"],
+      [1, "Child 2"],
+      [2, "Child 2.1"],
+      [1, "Child 3"],
+      [0, "Top Level 2"]]
+
+    assert_equal hash_to_array(Category.arrange), levels
+
+    # some deeper structure
+
+    category = Category.find_by_name("Child 1")
+    c1 = Category.new(:name => "Child 1.1")
+    c2 = Category.new(:name => "Child 1.1.1")
+    c3 = Category.new(:name => "Child 1.1.1.1")
+    c4 = Category.new(:name => "Child 1.2")
+    [c1, c2, c3, c4].each(&:save!)
+
+    c1.move_to_child_of(category)
+    c2.move_to_child_of(c1)
+    c3.move_to_child_of(c2)
+    c4.move_to_child_of(category)
+
+    levels = [
+      [0, "Top Level"],
+      [1, "Child 1"],
+      [2, "Child 1.1"],
+      [3, "Child 1.1.1"],
+      [4, "Child 1.1.1.1"],
+      [2, "Child 1.2"],
+      [1, "Child 2"],
+      [2, "Child 2.1"],
+      [1, "Child 3" ],
+      [0, "Top Level 2"]]
+
+    assert_equal hash_to_array(Category.arrange), levels
+  end
+
 end
