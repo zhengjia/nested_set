@@ -58,16 +58,19 @@ The view helper is called #nested_set_options.
 
 Example usage:
 
-  <%= f.select :parent_id, nested_set_options(Category, @category) {|i| "#{'-' * i.level} #{i.name}" } %>
+  <%= f.select :parent_id, nested_set_options(Category, @category) {|i, level| "#{'-' * level} #{i.name}" } %>
 
-  <%= select_tag 'parent_id', options_for_select(nested_set_options(Category) {|i| "#{'-' * i.level} #{i.name}" } ) %>
+  <%= select_tag 'parent_id', options_for_select(nested_set_options(Category) {|i, level| "#{'-' * level} #{i.name}" } ) %>
 
 or sorted select:
 
-  <%= f.select :parent_id, sorted_nested_set_options(Category, lambda(&:name)) {|i| "#{'-' * i.level} #{i.name}" } %>
+  <%= f.select :parent_id, sorted_nested_set_options(Category, lambda(&:name)) {|i, level| "#{'-' * level} #{i.name}" } %>
 
   <% sort_method = lambda{|x, y| x.name.downcase <=> y.name.downcase} %>
-  <%= select_tag 'parent_id', options_for_select(sorted_nested_set_options(Category, sort_method){|i| "#{'-' * i.level} #{i.name}" } ) %>
+
+NOTE: to sort UTF-8 strings you should use `x.name.mb_chars.downcase`
+
+  <%= select_tag 'parent_id', options_for_select(sorted_nested_set_options(Category, sort_method){|i, level| "#{'-' * level} #{i.name}" } ) %>
 
 See CollectiveIdea::Acts::NestedSet::Helper for more information about the helpers.
 
