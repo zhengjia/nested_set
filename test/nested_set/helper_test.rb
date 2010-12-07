@@ -76,4 +76,12 @@ class HelperTest < ActionView::TestCase
     assert_equal html, "<ul><li>Top Level</li><ul><li>Child 1</li><li>Child 2</li><ul><li>Child 2.1</li></ul><li>Child 3</li></ul><li>Top Level 2</li></ul>"
   end
 
+  def test_sorted_render_tree
+    html = render_tree(Category.arrange, :sort => lambda{|x| -x.id}) do |category, child|
+      concat content_tag(:li, category)
+      concat child
+    end
+    assert_equal html, "<ul><li>Top Level 2</li><li>Top Level</li><ul><li>Child 3</li><li>Child 2</li><ul><li>Child 2.1</li></ul><li>Child 1</li></ul></ul>"
+  end
+
 end
