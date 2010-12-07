@@ -137,7 +137,7 @@ module CollectiveIdea #:nodoc:
           #
           # This arranged hash can be rendered with recursive render_tree helper
           def arrange
-            nodes = order(:lft).all
+            nodes = order(left_column_name).all
             arranged = ActiveSupport::OrderedHash.new
             insertion_points = [arranged]
             depth = nodes.first.depth
