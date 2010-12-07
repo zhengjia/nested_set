@@ -73,7 +73,7 @@ module CollectiveIdea #:nodoc:
           result = []
           items.sort_by(&sort_proc).each do |root|
             set = root.self_and_descendants
-            result += build_node(set[0], set, sort_proc, mover, level){|x, level| yield(x, level)}
+            result += build_node(set[0], set, sort_proc, mover, level){|x, lvl| yield(x, lvl)}
           end
           result
         end
@@ -83,8 +83,8 @@ module CollectiveIdea #:nodoc:
           if mover.nil? || mover.new_record? || mover.move_possible?(i)
             result << [yield(node, level), node.id]
             unless node.leaf?
-              set.select{|i| i.parent_id == node.id}.sort_by(&sort_proc).map{ |i|
-                result.push(*build_node(i, set, sort_proc, mover, level.to_i + 1){|x, level| yield(x, level)})
+              set.select{|i| i.parent_id == node.id}.sort_by(&sort_proc).map{ |k|
+                result.push(*build_node(k, set, sort_proc, mover, level.to_i + 1){|x, lvl| yield(x, lvl)})
               }
             end
           end
