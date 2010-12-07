@@ -99,7 +99,7 @@ module CollectiveIdea #:nodoc:
                 where("#{quoted_right_column_name} - #{quoted_left_column_name} = 1").
                 order(quoted_left_column_name) 
               }
-              scope :with_depth, proc {|level| where(:depth => level).order("lft") }
+              scope :with_depth, proc {|level| where(:depth => level).order(quoted_left_column_name) }
 
               define_callbacks :move, :terminator => "result == false"
             end
@@ -113,7 +113,7 @@ module CollectiveIdea #:nodoc:
             roots.first
           end
 
-          # Returns arranged nodes hash. Requires depth cache.
+          # Returns arranged nodes hash.
           # I.e. you have this tree:
           #
           #   1
@@ -137,15 +137,14 @@ module CollectiveIdea #:nodoc:
           #
           # This arranged hash can be rendered with recursive render_tree helper
           def arrange
-            nodes = order(left_column_name).all
             arranged = ActiveSupport::OrderedHash.new
             insertion_points = [arranged]
-            depth = nodes.first.depth
-            nodes.each do |node|
-              insertion_points.push insertion_points.last.values.last if node.depth > depth
-              (depth - node.depth).times { insertion_points.pop } if node.depth < depth
+            depth = 0
+            order(quoted_left_column_name).each_with_level do |node, level|
+              insertion_points.push insertion_points.last.values.last if level > depth
+              (depth - node.depth).times { insertion_points.pop } if level < depth
               insertion_points.last.merge! node => ActiveSupport::OrderedHash.new
-              depth = node.depth
+              depth = level
             end
             arranged
           end
@@ -247,9 +246,9 @@ module CollectiveIdea #:nodoc:
           # Example:
           #    Category.each_with_level(Category.root.self_and_descendants) do |o, level|
           #
-          def each_with_level(objects)
+          def each_with_level(objects = nil)
             path = [nil]
-            objects.each do |o|
+            (objects || scoped).each do |o|
               if o.parent_id != path.last
                 # we are on a new level, did we decent or ascent?
                 if path.include?(o.parent_id)

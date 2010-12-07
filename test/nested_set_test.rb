@@ -712,6 +712,15 @@ class NestedSetTest < ActiveSupport::TestCase
     end
   end
 
+  def check_scoped_structure(entries, structure)
+    structure = structure.dup
+    entries.each_with_level do |category, level|
+      expected_level, expected_name = structure.shift
+      assert_equal expected_name, category.name, "wrong category"
+      assert_equal expected_level, level, "wrong level for #{category.name}"
+    end
+  end
+
   def test_each_with_level
     levels = [
       [0, "Top Level"],
@@ -721,6 +730,7 @@ class NestedSetTest < ActiveSupport::TestCase
       [1, "Child 3" ]]
 
     check_structure(Category.root.self_and_descendants, levels)
+    check_scoped_structure(Category.root.self_and_descendants, levels)
 
     # test some deeper structures
     category = Category.find_by_name("Child 1")
@@ -746,7 +756,7 @@ class NestedSetTest < ActiveSupport::TestCase
       [2, "Child 2.1"],
       [1, "Child 3" ]]
 
-      check_structure(Category.root.self_and_descendants, levels)
+    check_scoped_structure(Category.root.self_and_descendants, levels)
   end
 
   def test_model_with_attr_accessible
