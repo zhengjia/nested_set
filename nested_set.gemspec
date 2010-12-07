@@ -9,7 +9,7 @@ Gem::Specification.new do |s|
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Brandon Keepers", "Daniel Morrison"]
-  s.date = %q{2010-11-12}
+  s.date = %q{2010-12-07}
   s.description = %q{An awesome nested set implementation for Active Record}
   s.email = %q{info@collectiveidea.com}
   s.extra_rdoc_files = [
@@ -33,6 +33,7 @@ Gem::Specification.new do |s|
      "lib/nested_set/railtie.rb",
      "nested_set.gemspec",
      "rails/init.rb",
+     "test/benchmarks.rb",
      "test/db/database.yml",
      "test/db/schema.rb",
      "test/fixtures/categories.yml",
@@ -49,7 +50,8 @@ Gem::Specification.new do |s|
   s.rubygems_version = %q{1.3.7}
   s.summary = %q{An awesome nested set implementation for Active Record}
   s.test_files = [
-    "test/nested_set_test.rb",
+    "test/benchmarks.rb",
+     "test/nested_set_test.rb",
      "test/nested_set/helper_test.rb",
      "test/test_helper.rb",
      "test/fixtures/category.rb",
@@ -66,6 +68,7 @@ Gem::Specification.new do |s|
       s.add_development_dependency(%q<sqlite3-ruby>, [">= 0"])
       s.add_development_dependency(%q<actionpack>, [">= 3.0.0"])
       s.add_development_dependency(%q<activesupport>, [">= 3.0.0"])
+      s.add_development_dependency(%q<bench_press>, [">= 0.3.1"])
       s.add_development_dependency(%q<jeweler>, [">= 0"])
     else
       s.add_dependency(%q<railties>, [">= 3.0.0"])
@@ -73,6 +76,7 @@ Gem::Specification.new do |s|
       s.add_dependency(%q<sqlite3-ruby>, [">= 0"])
       s.add_dependency(%q<actionpack>, [">= 3.0.0"])
       s.add_dependency(%q<activesupport>, [">= 3.0.0"])
+      s.add_dependency(%q<bench_press>, [">= 0.3.1"])
       s.add_dependency(%q<jeweler>, [">= 0"])
     end
   else
@@ -81,6 +85,7 @@ Gem::Specification.new do |s|
     s.add_dependency(%q<sqlite3-ruby>, [">= 0"])
     s.add_dependency(%q<actionpack>, [">= 3.0.0"])
     s.add_dependency(%q<activesupport>, [">= 3.0.0"])
+    s.add_dependency(%q<bench_press>, [">= 0.3.1"])
     s.add_dependency(%q<jeweler>, [">= 0"])
   end
 end

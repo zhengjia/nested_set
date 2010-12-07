@@ -74,6 +74,14 @@ NOTE: to sort UTF-8 strings you should use `x.name.mb_chars.downcase`
 
 See CollectiveIdea::Acts::NestedSet::Helper for more information about the helpers.
 
+== Development
+
+`bundle install`
+
+Running tests `bundle exec rake test`
+
+Benchmark tests `bundle ruby test/benchmark.rb`
+
 == References
 
 You can learn more about nested sets at:

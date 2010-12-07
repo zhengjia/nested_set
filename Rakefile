@@ -16,6 +16,7 @@ begin
     gem.add_development_dependency "sqlite3-ruby"
     gem.add_development_dependency "actionpack", ['>= 3.0.0']
     gem.add_development_dependency "activesupport", ['>= 3.0.0']
+    gem.add_development_dependency "bench_press", ['>= 0.3.1']
     gem.add_development_dependency "jeweler"
   end
   Jeweler::GemcutterTasks.new
