@@ -35,12 +35,13 @@ class HelperTest < ActionView::TestCase
   def test_build_node
     set = categories(:top_level).self_and_descendants
     expected = set.map{|i| [i.name, i.id]}
-    actual = build_node(set[0], set, lambda(&:lft)){|i, level| i.name }
+
+    hash = set.arrange
+    actual = build_node(hash, lambda(&:lft)){|i, level| i.name }
     assert_equal expected, actual
   end
 
   def test_build_node_with_back_id_order
-    set = categories(:top_level).self_and_descendants
     expected = [
       ["Top Level", 1],
       ["Child 3", 5],
@@ -48,7 +49,9 @@ class HelperTest < ActionView::TestCase
       ["Child 2.1", 4],
       ["Child 1", 2]
     ]
-    actual = build_node(set[0], set, lambda{|x| -x.id}){|i, level| i.name }
+
+    hash = categories(:top_level).self_and_descendants.arrange
+    actual = build_node(hash, lambda{|x| -x.id}){|i, level| i.name }
     assert_equal expected, actual
   end
 
@@ -68,6 +71,19 @@ class HelperTest < ActionView::TestCase
     assert_equal expected, actual
   end
 
+  def test_sorted_nested_set_with_mover
+    expected = [
+      [" Top Level 2", 6],
+      [" Top Level", 1],
+      ['- Child 3', 5],
+      ["- Child 1", 2]
+    ]
+
+    actual = sorted_nested_set_options(Category, lambda{|x| -x.id}, categories(:child_2)) do |c, level|
+      "#{'-' * level} #{c.name}"
+    end
+    assert_equal expected, actual
+  end
   def test_render_tree
     html = render_tree(Category.arrange) do |category, child|
       concat content_tag(:li, category)

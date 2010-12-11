@@ -142,7 +142,7 @@ module CollectiveIdea #:nodoc:
             depth = 0
             order(quoted_left_column_name).each_with_level do |node, level|
               insertion_points.push insertion_points.last.values.last if level > depth
-              (depth - node.depth).times { insertion_points.pop } if level < depth
+              (depth - level).times { insertion_points.pop } if level < depth
               insertion_points.last.merge! node => ActiveSupport::OrderedHash.new
               depth = level
             end
@@ -246,19 +246,17 @@ module CollectiveIdea #:nodoc:
           # Example:
           #    Category.each_with_level(Category.root.self_and_descendants) do |o, level|
           #
+
           def each_with_level(objects = nil)
-            path = [nil]
-            (objects || scoped).each do |o|
-              if o.parent_id != path.last
-                # we are on a new level, did we decent or ascent?
-                if path.include?(o.parent_id)
-                  # remove wrong wrong tailing paths elements
-                  path.pop while path.last != o.parent_id
-                else
-                  path << o.parent_id
-                end
+            levels = []
+            (objects || scoped).each do |i|
+              if level = levels.index(i.parent_id)
+                levels.slice!((level + 1)..-1)
+              else
+                levels << i.parent_id
+                level = levels.size - 1
               end
-              yield(o, path.length - 1)
+              yield(i, level)
             end
           end
 

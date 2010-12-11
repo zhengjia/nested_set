@@ -32,7 +32,7 @@ if $0 == __FILE__
   Category.delete_all
   Category.create(:name => "Root Node 1")
   Category.create(:name => "Root Node 2")
-  25.times do |i|
+  50.times do |i|
     node = Category.create(:name => "Node #{i}")
     set = Category.roots.map{|root| root.self_and_descendants}.flatten
     random_node = set[rand(set.size-1)]
