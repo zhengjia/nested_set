@@ -99,7 +99,7 @@ module CollectiveIdea #:nodoc:
                 where("#{quoted_right_column_name} - #{quoted_left_column_name} = 1").
                 order(quoted_left_column_name) 
               }
-              scope :with_depth, proc {|level| where(:depth => level).order("lft") }
+              scope :with_depth, proc {|level| where(:depth => level).order(quoted_left_column_name) }
 
               define_callbacks :move, :terminator => "result == false"
             end
@@ -111,6 +111,42 @@ module CollectiveIdea #:nodoc:
           # Returns the first root
           def root
             roots.first
+          end
+
+          # Returns arranged nodes hash.
+          # I.e. you have this tree:
+          #
+          #   1
+          #     2
+          #     3
+          #       4
+          #         5
+          #       6
+          #   7
+          #
+          # Hash will looks like:
+          #
+          #   {1 => {2 => {}, 3 => {4 => {5 => {}}, 6 => {}}}, 7 => {}}
+          #
+          # == Usage:
+          #
+          #   Categories.arrange
+          #   Categories.find(42).children.arrange
+          #   Categories.find(42).descendants.arrange
+          #   Categories.find(42).self_and_descendants.arrange
+          #
+          # This arranged hash can be rendered with recursive render_tree helper
+          def arrange
+            arranged = ActiveSupport::OrderedHash.new
+            insertion_points = [arranged]
+            depth = 0
+            order(quoted_left_column_name).each_with_level do |node, level|
+              insertion_points.push insertion_points.last.values.last if level > depth
+              (depth - node.depth).times { insertion_points.pop } if level < depth
+              insertion_points.last.merge! node => ActiveSupport::OrderedHash.new
+              depth = level
+            end
+            arranged
           end
 
           def valid?
@@ -210,9 +246,9 @@ module CollectiveIdea #:nodoc:
           # Example:
           #    Category.each_with_level(Category.root.self_and_descendants) do |o, level|
           #
-          def each_with_level(objects)
+          def each_with_level(objects = nil)
             path = [nil]
-            objects.each do |o|
+            (objects || scoped).each do |o|
               if o.parent_id != path.last
                 # we are on a new level, did we decent or ascent?
                 if path.include?(o.parent_id)
