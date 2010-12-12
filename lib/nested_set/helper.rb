@@ -26,7 +26,6 @@ module CollectiveIdea #:nodoc:
           items = Array(class_or_item)
           result = []
           items.each do |item|
-            levels = []
             item.self_and_descendants.each_with_level do |i, level|
               if mover.nil? || mover.new_record? || mover.move_possible?(i)
                 result.push([yield(i, level), i.id])
@@ -55,28 +54,26 @@ module CollectiveIdea #:nodoc:
         #
         #   OR
         #
-        #   sort_method = lambda{|x,y| x.name.mb_chars.downcase <=> y.name.mb_chars.downcase}
+        #   sort_method = lambda{|x| x.name.mb_chars.downcase }
         #
         #   <%= f.select :parent_id, nested_set_options(Category, sort_method) {|i, level|
         #       "#{'–' * level} #{i.name}"
         #     }) %>
         #
         def sorted_nested_set_options(class_or_item, sort_proc, mover = nil, level = 0)
-          class_or_item = class_or_item.roots if class_or_item.is_a?(Class)
-          items = Array(class_or_item)
-          result = []
-          items.sort_by(&sort_proc).each do |item|
-            hash = item.self_and_descendants.arrange
-            result += build_node(hash, sort_proc, mover, level){|x, lvl| yield(x, lvl)}
-          end
-          result
+          hash = if class_or_item.is_a?(Class)
+                   class_or_item
+                 else
+                   class_or_item.self_and_descendants
+                 end.arrange
+          build_node(hash, sort_proc, mover, level){|x, lvl| yield(x, lvl)}
         end
 
         def build_node(hash, sort_proc, mover = nil, level = nil)
-          result ||= []
+          result = []
           hash.keys.sort_by(&sort_proc).each do |node|
             if mover.nil? || mover.new_record? || mover.move_possible?(node)
-              result << [yield(node, level.to_i), node.id]
+              result.push([yield(node, level.to_i), node.id])
               result.push(*build_node(hash[node], sort_proc, mover, level.to_i + 1){|x, lvl| yield(x, lvl)})
             end
           end if hash.present?

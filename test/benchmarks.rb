@@ -49,7 +49,7 @@ if $0 == __FILE__
   end
 
   measure "sorted_nested_set_options" do
-    sorted_nested_set_options(Category, lambda(&:name)){|i, level| "#{'-' * level} #{i.name}" }
+    sorted_nested_set_options(Category, lambda{|x| x.name }){|i, level| "#{'-' * level} #{i.name}" }
   end
 
 end

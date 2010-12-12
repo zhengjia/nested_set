@@ -66,7 +66,7 @@ or sorted select:
 
     <%= f.select :parent_id, sorted_nested_set_options(Category, lambda(&:name)) {|i, level| "#{'-' * level} #{i.name}" } %>
 
-    <% sort_method = lambda{|x, y| x.name.downcase <=> y.name.downcase} %>
+    <% sort_method = lambda{|x| x.name.downcase} %>
 
 NOTE: to sort UTF-8 strings you should use `x.name.mb_chars.downcase`
 
