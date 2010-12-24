@@ -200,12 +200,12 @@ class NestedSetTest < ActiveSupport::TestCase
   def test_depth_after_move
     categories(:child_2).move_to_root
 
-    assert_equal 0, categories(:child_2).reload.depth
-    assert_equal 1, categories(:child_2_1).reload.depth
+    assert_equal 0, categories(:child_2).depth
+    assert_equal 1, categories(:child_2_1).depth
 
     categories(:child_2).move_to_child_of(categories(:top_level_2))
 
-    assert_equal 1, categories(:child_2).reload.depth
+    assert_equal 1, categories(:child_2).depth
     assert_equal 2, categories(:child_2_1).reload.depth
   end
 

@@ -23,6 +23,7 @@ module CollectiveIdea #:nodoc:
         def update_depth
           depth_delta = level - depth
           if depth_delta != 0
+            self.depth += depth_delta
             self.self_and_descendants.update_all(["#{self.class.quoted_depth_column_name} = #{self.class.quoted_depth_column_name} + ?", depth_delta])
           end
         end
