@@ -99,7 +99,7 @@ module CollectiveIdea #:nodoc:
               }
               scope :leaves, lambda {
                 where("#{quoted_right_column_name} - #{quoted_left_column_name} = 1").
-                order(quoted_left_column_name) 
+                order(quoted_left_column_name)
               }
               scope :with_depth, proc {|level| where(:depth => level).order(quoted_left_column_name) }
 
@@ -208,34 +208,24 @@ module CollectiveIdea #:nodoc:
             # Don't rebuild a valid tree.
             return true if valid?
 
-            scope = lambda{|node|}
-            if acts_as_nested_set_options[:scope]
-              scope = lambda{|node|
-                scope_column_names.inject(""){|str, column_name|
-                  str << "AND #{connection.quote_column_name(column_name)} = #{connection.quote(node.send(column_name.to_sym))} "
-                }
-              }
-            end
             indices = {}
 
             set_left_and_rights = lambda do |node|
+              node_scope = scope_for_rebuild(node)
               # set left
-              node[left_column_name] = indices[scope.call(node)] += 1
+              node[left_column_name] = indices[node_scope] += 1
               # find
-              where("#{quoted_parent_column_name} = ? #{scope.call(node)}", node).
-                order("#{quoted_left_column_name}, #{quoted_right_column_name}, id").
-                all.each{|n| set_left_and_rights.call(n) }
+              nodes_for_rebuild(node, node_scope).each{ |n| set_left_and_rights.call(n) }
               # set right
-              node[right_column_name] = indices[scope.call(node)] += 1
+              node[right_column_name] = indices[node_scope] += 1
               node.save!
             end
 
             # Find root node(s)
-            root_nodes = where(parent_column_name => nil).
-                order("#{quoted_left_column_name}, #{quoted_right_column_name}, id").
-                all.each do |root_node|
+            root_nodes_for_rebuild.each do |root_node|
+              node_scope = scope_for_rebuild(root_node)
               # setup index for this scope
-              indices[scope.call(root_node)] ||= 0
+              indices[node_scope] ||= 0
               set_left_and_rights.call(root_node)
             end
           end
@@ -269,6 +259,33 @@ module CollectiveIdea #:nodoc:
           def after_move(*args, &block)
             set_callback :move, :after, *args, &block
           end
+
+          private
+
+            def scope_for_rebuild(node)
+              scope_column_names.inject({}) do |hash, column_name|
+                hash[column_name] = node.send(column_name.to_sym)
+                hash
+              end
+            end
+
+            def nodes_for_rebuild(node, node_scope)
+              where(parent_column_name => node).
+                where(node_scope).
+                order(order_for_rebuild).
+                all
+            end
+
+            def root_nodes_for_rebuild
+              where(parent_column_name => nil).
+                order(order_for_rebuild).
+                all
+            end
+
+            def order_for_rebuild
+              "#{quoted_left_column_name}, #{quoted_right_column_name}, id"
+            end
+
         end
 
         # Mixed into both classes and instances to provide easy access to the column names
