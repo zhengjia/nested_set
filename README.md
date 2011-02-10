@@ -36,6 +36,8 @@ To make use of nested_set, your model needs to have 3 fields: lft, rgt, and pare
       end
     end
 
+###NB: There is no reason to use depth column. It's only add additional queries to DB without benefit. If you need level you should use `each_with_level` instead.
+
 Enable the nested set functionality by declaring acts_as_nested_set on your model
 
     class Category < ActiveRecord::Base
