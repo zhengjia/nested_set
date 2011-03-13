@@ -535,8 +535,8 @@ module CollectiveIdea #:nodoc:
           # the base ActiveRecord class, using the :scope declared in the acts_as_nested_set
           # declaration.
           def nested_set_scope
-            conditions = Array(acts_as_nested_set_options[:scope]).inject({}) do |conditions, attr|
-              conditions.merge attr => self[attr]
+            conditions = Array(acts_as_nested_set_options[:scope]).inject({}) do |cnd, attr|
+              cnd.merge attr => self[attr]
             end
 
             self.class.base_class.order(q_left).where(conditions)
