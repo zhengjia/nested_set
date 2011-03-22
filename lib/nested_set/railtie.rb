@@ -8,11 +8,11 @@ module CollectiveIdea
       class Railtie < ::Rails::Railtie
         config.before_initialize do
           ActiveSupport.on_load :active_record do
-            ActiveRecord::Base.send(:include, CollectiveIdea::Acts::NestedSet::Base)
+            include CollectiveIdea::Acts::NestedSet::Base
           end
 
           ActiveSupport.on_load :action_view do
-            ActionView::Base.send(:include, CollectiveIdea::Acts::NestedSet::Helper)
+            include CollectiveIdea::Acts::NestedSet::Helper
           end
         end
 
