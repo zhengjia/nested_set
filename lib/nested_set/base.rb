@@ -157,8 +157,8 @@ module CollectiveIdea #:nodoc:
           def valid?
             left_and_rights_valid? && no_duplicates_for_columns? && all_roots_valid?
           end
-
-          def left_and_rights_valid?
+          
+          def invalid_left_and_right
             joins("LEFT OUTER JOIN #{quoted_table_name} AS parent ON " +
                 "#{quoted_table_name}.#{quoted_parent_column_name} = parent.#{primary_key}").
             where(
@@ -169,7 +169,11 @@ module CollectiveIdea #:nodoc:
                 "(#{quoted_table_name}.#{quoted_parent_column_name} IS NOT NULL AND " +
                   "(#{quoted_table_name}.#{quoted_left_column_name} <= parent.#{quoted_left_column_name} OR " +
                   "#{quoted_table_name}.#{quoted_right_column_name} >= parent.#{quoted_right_column_name}))"
-            ).exists? == false
+            )   
+          end
+
+          def left_and_rights_valid?
+            invalid_left_and_right.exists? == false
           end
 
           def no_duplicates_for_columns?
@@ -290,8 +294,7 @@ module CollectiveIdea #:nodoc:
 
             def root_nodes_for_rebuild
               where(parent_column_name => nil).
-                order(order_for_rebuild).
-                all
+                order(order_for_rebuild)
             end
 
             def order_for_rebuild
@@ -523,42 +526,32 @@ module CollectiveIdea #:nodoc:
           end
           
           def is_valid?
-            left_and_rights_valid? && no_duplicates_for_columns? && root_valid?
+            invalid_nodes.empty?
+          end
+          
+          def invalid_nodes
+            invalid_left_and_right.concat(duplicates_for_columns)
           end
 
-          def left_and_rights_valid?
-            self.class.joins("LEFT OUTER JOIN #{self.class.quoted_table_name} AS parent ON " +
-                "#{self.class.quoted_table_name}.#{self.class.quoted_parent_column_name} = parent.#{self.class.primary_key}").
-            where(
-                "#{self.class.quoted_table_name}.#{self.class.connection.quote_column_name(self.class.acts_as_nested_set_options[:scope]) } = #{self.send(self.class.acts_as_nested_set_options[:scope]) } AND" +
-                "(#{self.class.quoted_table_name}.#{self.class.quoted_left_column_name} IS NULL OR " +
-                "#{self.class.quoted_table_name}.#{self.class.quoted_right_column_name} IS NULL OR " +
-                "#{self.class.quoted_table_name}.#{self.class.quoted_left_column_name} >= " +
-                  "#{self.class.quoted_table_name}.#{self.class.quoted_right_column_name} OR " +
-                "(#{self.class.quoted_table_name}.#{self.class.quoted_parent_column_name} IS NOT NULL AND " +
-                  "(#{self.class.quoted_table_name}.#{self.class.quoted_left_column_name} <= parent.#{self.class.quoted_left_column_name} OR " +
-                  "#{self.class.quoted_table_name}.#{self.class.quoted_right_column_name} >= parent.#{self.class.quoted_right_column_name})))"
-            ).exists? == false
+          def invalid_left_and_right
+            self.class.invalid_left_and_right.where( "#{self.class.quoted_table_name}.#{self.class.connection.quote_column_name(self.class.acts_as_nested_set_options[:scope]) } = #{self.send(self.class.acts_as_nested_set_options[:scope]) }")
           end
 
-          def no_duplicates_for_columns?
+          def duplicates_for_columns
             scope_string = Array(self.class.acts_as_nested_set_options[:scope]).map do |c|
               self.class.connection.quote_column_name(c)
             end.push(nil).join(", ")
-            [self.class.quoted_left_column_name, self.class.quoted_right_column_name].all? do |column|
+            duplicates = []
+            [self.class.quoted_left_column_name, self.class.quoted_right_column_name].collect do |column|
               # No duplicates
-              self.class.unscoped.first(
-                :select => "#{scope_string}#{column}, COUNT(#{column})",
+              duplicates << self.class.unscoped.all(
+                :select => "#{self.class.primary_key}, #{scope_string}#{column}, COUNT(#{column})",
                 :group => "#{scope_string}#{column}",
                 :having => "COUNT(#{column}) > 1",
                 :conditions => "#{self.class.connection.quote_column_name(self.class.acts_as_nested_set_options[:scope]) } = #{self.send(self.class.acts_as_nested_set_options[:scope]) }"
-              ).nil?
+              )
             end
-          end
-
-          def root_valid?
-            self.left > 0
-            self.right > 0
+            duplicates.flatten
           end
 
           # Rebuilds the left & rights if unset or invalid.  Also very useful for converting from acts_as_tree.
@@ -567,21 +560,20 @@ module CollectiveIdea #:nodoc:
             return true if is_valid?
             
             index = 0
+            node_scope = self.class.send(:scope_for_rebuild, self)
+            lft_column_name = self.class.left_column_name
+            rgt_column_name = self.class.right_column_name
             set_left_and_rights = lambda do |node|
-              node_scope = self.class.send(:scope_for_rebuild, node)
               # set left
-              node[self.class.left_column_name] = index += 1
+              node[lft_column_name] = index += 1
               # find
               self.class.send(:nodes_for_rebuild, node, node_scope).each{ |n| set_left_and_rights.call(n) }
               # set right
-              node[self.class.right_column_name] = index += 1
+              node[rgt_column_name] = index += 1
               node.save(:validate => false)
             end
             
-            set_left_and_rights.call(self)
-            
-            root_nodes_for_rebuild.each do |root_node|
-              node_scope = self.class.send(:scope_for_rebuild, root_node)
+            self.class.send(:root_nodes_for_rebuild).where(self.class.acts_as_nested_set_options[:scope] => self[self.class.acts_as_nested_set_options[:scope] ]).each do |root_node|
               # setup index for this scope
               set_left_and_rights.call(root_node)
             end
@@ -589,13 +581,6 @@ module CollectiveIdea #:nodoc:
           end
 
         protected
-        
-          def root_nodes_for_rebuild
-            self.class.where(self.class.parent_column_name => nil).
-              where(self.class.acts_as_nested_set_options[:scope] => self[self.class.acts_as_nested_set_options[:scope] ]).
-              order(self.class.send(:order_for_rebuild)).
-              all
-          end
 
           def q_left
             "#{self.class.quoted_table_name}.#{quoted_left_column_name}"

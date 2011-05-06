@@ -302,13 +302,9 @@ class NestedSetTest < ActiveSupport::TestCase
     ScopedCategory.update_all(:organization_id => 1, :lft => nil)
     root = ScopedCategory.root
     root.rebuild!
-    assert root.left_and_rights_valid?
-    assert root.no_duplicates_for_columns?
-    assert root.root_valid?
     assert root.is_valid?
   end
   
-
   def test_is_or_is_descendant_of?
     assert categories(:child_1).is_or_is_descendant_of?(categories(:top_level))
     assert categories(:child_2_1).is_or_is_descendant_of?(categories(:top_level))
