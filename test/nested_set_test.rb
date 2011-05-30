@@ -5,13 +5,13 @@ class Note < ActiveRecord::Base
 end
 
 class Default < ActiveRecord::Base
-  acts_as_nested_set
   set_table_name 'categories'
+  acts_as_nested_set
 end
 
 class ScopedCategory < ActiveRecord::Base
-  acts_as_nested_set :scope => :organization
   set_table_name 'categories'
+  acts_as_nested_set :scope => :organization
 end
 
 class RenamedColumns < ActiveRecord::Base
@@ -203,15 +203,13 @@ class NestedSetTest < ActiveSupport::TestCase
   end
 
   def test_depth_after_move
-    categories(:child_2).move_to_root
-
-    assert_equal 0, categories(:child_2).depth
-    assert_equal 1, categories(:child_2_1).depth
-
-    categories(:child_2).move_to_child_of(categories(:top_level_2))
-
+    assert_equal 0, categories(:top_level).depth
     assert_equal 1, categories(:child_2).depth
-    assert_equal 2, categories(:child_2_1).reload.depth
+
+    categories(:top_level).move_to_child_of(categories(:top_level_2))
+
+    assert_equal 1, categories(:top_level).reload.depth
+    assert_equal 2, categories(:child_2).reload.depth
   end
 
   def test_has_children?

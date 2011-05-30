@@ -14,7 +14,7 @@ top_level:
   name: Top Level
   lft: 1
   rgt: 10
-  depth: 0
+  #depth: NULL
 child_1:
   id: 2
   name: Child 1

@@ -14,9 +14,8 @@ module CollectiveIdea #:nodoc:
           scope_string.blank? ? "1 = 1" : scope_string
         end
 
-        # Check is model has depth column
-        def depth?
-          self.respond_to?(:depth)
+        def depth
+          super.to_i if depth?
         end
 
         # Update cached_level attribute
@@ -24,7 +23,7 @@ module CollectiveIdea #:nodoc:
           self.depth = level
           if depth_changed?
             self.self_and_descendants.
-              update_all(["#{self.class.quoted_depth_column_name} = #{self.class.quoted_depth_column_name} + ?",
+              update_all(["#{self.class.quoted_depth_column_name} = COALESCE(#{self.class.quoted_depth_column_name}, 0) + ?",
                 depth_change[1] - depth_change[0].to_i])
           end
         end
