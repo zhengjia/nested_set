@@ -157,7 +157,7 @@ module CollectiveIdea #:nodoc:
           def valid?
             left_and_rights_valid? && no_duplicates_for_columns? && all_roots_valid?
           end
-          
+
           def invalid_left_and_right
             joins("LEFT OUTER JOIN #{quoted_table_name} AS parent ON " +
                 "#{quoted_table_name}.#{quoted_parent_column_name} = parent.#{primary_key}").
@@ -169,7 +169,7 @@ module CollectiveIdea #:nodoc:
                 "(#{quoted_table_name}.#{quoted_parent_column_name} IS NOT NULL AND " +
                   "(#{quoted_table_name}.#{quoted_left_column_name} <= parent.#{quoted_left_column_name} OR " +
                   "#{quoted_table_name}.#{quoted_right_column_name} >= parent.#{quoted_right_column_name}))"
-            )   
+            )
           end
 
           def left_and_rights_valid?
@@ -524,11 +524,11 @@ module CollectiveIdea #:nodoc:
               "#{'*'*(level+1)} #{node.id} #{node.to_s} (#{node.parent_id}, #{node.left}, #{node.right})"
             end.join("\n")
           end
-          
+
           def is_valid?
             invalid_nodes.empty?
           end
-          
+
           def invalid_nodes
             invalid_left_and_right.concat(duplicates_for_columns)
           end
@@ -558,7 +558,7 @@ module CollectiveIdea #:nodoc:
           def rebuild!
             # Don't rebuild a valid tree.
             return true if is_valid?
-            
+
             index = 0
             node_scope = self.class.send(:scope_for_rebuild, self)
             lft_column_name = self.class.left_column_name
@@ -572,12 +572,12 @@ module CollectiveIdea #:nodoc:
               node[rgt_column_name] = index += 1
               node.save(:validate => false)
             end
-            
+
             self.class.send(:root_nodes_for_rebuild).where(self.class.acts_as_nested_set_options[:scope] => self[self.class.acts_as_nested_set_options[:scope] ]).each do |root_node|
               # setup index for this scope
               set_left_and_rights.call(root_node)
             end
-            
+
           end
 
         protected
@@ -708,11 +708,19 @@ module CollectiveIdea #:nodoc:
                 a, b, c, d = [self[left_column_name], self[right_column_name], bound, other_bound].sort
 
                 # select the rows in the model between a and d, and apply a lock
-                self.class.base_class.find(:all,
-                  :select => primary_key_column_name,
-                  :conditions => ["#{quoted_left_column_name} >= :a and #{quoted_right_column_name} <= :d", {:a => a, :d => d}],
-                  :lock => true
-                )
+                unless self.class.acts_as_nested_set_options[:scope]
+                  self.class.base_class.find(:all,
+                    :select => primary_key_column_name,
+                    :conditions => ["#{quoted_left_column_name} >= :a and #{quoted_right_column_name} <= :d", {:a => a, :d => d}],
+                    :lock => true
+                  )
+                else
+                  self.class.base_class.find(:all,
+                    :select => primary_key_column_name,
+                    :conditions => ["#{quoted_left_column_name} >= :a and #{quoted_right_column_name} <= :d and #{self.class.acts_as_nested_set_options[:scope]} = #{self.send(self.class.acts_as_nested_set_options[:scope])}", {:a => a, :d => d }],
+                    :lock => true
+                  )
+                end
 
                 new_parent = case position
                   when :child;  target.id
