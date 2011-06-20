@@ -59,12 +59,6 @@ module CollectiveIdea #:nodoc:
             class_attribute :acts_as_nested_set_options
             self.acts_as_nested_set_options = options
 
-            class_attribute :use_depth
-            self.use_depth = self.base_class.column_names.include?(self.base_class.acts_as_nested_set_options[:depth_column])
-
-            #backward compatibility
-            alias_method :depth?, :use_depth
-
             unless self.is_a?(ClassMethods)
               include Comparable
               include Columns
@@ -109,7 +103,7 @@ module CollectiveIdea #:nodoc:
                 where("#{quoted_right_column_name} - #{quoted_left_column_name} = 1").
                 order(quoted_left_column_name)
               }
-              scope :with_depth, proc {|level| where(:depth => level).order(quoted_left_column_name) }
+              scope :with_depth, proc {|level| where(:"#{depth_column_name}" => level).order(quoted_left_column_name) }
 
               define_callbacks :move, :terminator => "result == false"
             end

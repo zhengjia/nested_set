@@ -197,13 +197,13 @@ class NestedSetTest < ActiveSupport::TestCase
   end
 
   def test_depth
-    assert_equal 0, categories(:top_level).depth
+    assert_equal nil, categories(:top_level).depth
     assert_equal 1, categories(:child_1).depth
     assert_equal 2, categories(:child_2_1).depth
   end
 
   def test_depth_after_move
-    assert_equal 0, categories(:top_level).depth
+    assert_equal nil, categories(:top_level).depth
     assert_equal 1, categories(:child_2).depth
 
     categories(:top_level).move_to_child_of(categories(:top_level_2))

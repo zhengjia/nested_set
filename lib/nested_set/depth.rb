@@ -14,13 +14,14 @@ module CollectiveIdea #:nodoc:
           scope_string.blank? ? "1 = 1" : scope_string
         end
 
-        def depth
-          super.to_i if depth?
+
+        def depth?
+          respond_to?(depth_column_name)
         end
 
         # Update cached_level attribute
         def update_depth
-          self.depth = level
+          send :"#{depth_column_name}=", level
           if depth_changed?
             self.self_and_descendants.
               update_all(["#{self.class.quoted_depth_column_name} = COALESCE(#{self.class.quoted_depth_column_name}, 0) + ?",
