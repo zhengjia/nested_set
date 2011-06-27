@@ -489,7 +489,7 @@ module CollectiveIdea #:nodoc:
             if scope_object.respond_to?(:nested_set_lock)
               begin
                 scope_object.reload
-                raise NestedSetLockError if self.site.action_in_progress
+                raise NestedSetLockError if scope_object.nested_set_lock
                 scope_object.update_attribute(:nested_set_lock, true)
                 yield
               ensure
