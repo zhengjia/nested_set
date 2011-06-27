@@ -654,31 +654,33 @@ module CollectiveIdea #:nodoc:
           # back to the left so the counts still work.
           def destroy_descendants
             return if right.nil? || left.nil? || skip_before_destroy
-            reload_nested_set
 
-            self.class.base_class.transaction do
-              if acts_as_nested_set_options[:dependent] == :destroy
-                descendants.each do |model|
-                  model.skip_before_destroy = true
-                  model.destroy
+            scope_lock_check do
+              reload_nested_set
+              self.class.base_class.transaction do
+                if acts_as_nested_set_options[:dependent] == :destroy
+                  descendants.each do |model|
+                    model.skip_before_destroy = true
+                    model.destroy
+                  end
+                else
+                  nested_set_scope.delete_all(["#{q_left} > ? AND #{q_right} < ?", left, right])
                 end
-              else
-                nested_set_scope.delete_all(["#{q_left} > ? AND #{q_right} < ?", left, right])
+
+                # update lefts and rights for remaining nodes
+                diff = right - left + 1
+                nested_set_scope.update_all(
+                  ["#{quoted_left_column_name} = (#{quoted_left_column_name} - ?)", diff],
+                  ["#{quoted_left_column_name} > ?", right]
+                )
+                nested_set_scope.update_all(
+                  ["#{quoted_right_column_name} = (#{quoted_right_column_name} - ?)", diff],
+                  ["#{quoted_right_column_name} > ?", right]
+                )
+
+                # Don't allow multiple calls to destroy to corrupt the set
+                self.skip_before_destroy = true
               end
-
-              # update lefts and rights for remaining nodes
-              diff = right - left + 1
-              nested_set_scope.update_all(
-                ["#{quoted_left_column_name} = (#{quoted_left_column_name} - ?)", diff],
-                ["#{quoted_left_column_name} > ?", right]
-              )
-              nested_set_scope.update_all(
-                ["#{quoted_right_column_name} = (#{quoted_right_column_name} - ?)", diff],
-                ["#{quoted_right_column_name} > ?", right]
-              )
-
-              # Don't allow multiple calls to destroy to corrupt the set
-              self.skip_before_destroy = true
             end
           end
 
