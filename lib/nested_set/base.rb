@@ -1,4 +1,5 @@
 # encoding: utf-8
+class NestedSetLockError < StandardError; end
 module CollectiveIdea #:nodoc:
   module Acts #:nodoc:
     module NestedSet #:nodoc:
@@ -670,10 +671,8 @@ module CollectiveIdea #:nodoc:
 
           def move_to(target, position)
             raise ActiveRecord::ActiveRecordError, "You cannot move a new node" if self.new_record?
-            raise ActiveRecord::NestedSetLockError, "Action in progress" if self.site.action_in_progress?
-            
-            
-            self.update_attribute(:action_in_progress, true)
+            raise NestedSetLockError if self.site.action_in_progress?
+            self.site.update_attribute(:action_in_progress, true)
             res = run_callbacks :move do
               transaction do
                 if target.is_a? self.class.base_class
@@ -683,11 +682,9 @@ module CollectiveIdea #:nodoc:
                   target = nested_set_scope.find(target)
                 end
                 self.reload_nested_set
-
                 unless position == :root || move_possible?(target)
                   raise ActiveRecord::ActiveRecordError, "Impossible move, target node cannot be inside moved tree."
                 end
-
                 bound = case position
                   when :child;  target[right_column_name]
                   when :left;   target[left_column_name]
@@ -755,9 +752,9 @@ module CollectiveIdea #:nodoc:
               target.reload_nested_set if target
               self.reload_nested_set
               self.update_depth if depth?
-            ensure
-              self.site.update_attribute(:action_in_progress, false)
             end
+          ensure
+            self.site.update_attribute(:action_in_progress, false)
           end
         end
       end # Base
