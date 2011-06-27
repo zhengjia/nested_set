@@ -276,7 +276,7 @@ module CollectiveIdea #:nodoc:
           def after_move(*args, &block)
             set_callback :move, :after, *args, &block
           end
-
+            
           private
 
             def scope_for_rebuild(node)
@@ -481,6 +481,26 @@ module CollectiveIdea #:nodoc:
           def right_sibling
             siblings.where("#{q_left} > ?", left).first
           end
+          
+          # Raise exception if a move is in progress
+          def  scope_lock_check
+            scope = self.class.acts_as_nested_set_options[:scope]
+            scope_string = scope.to_s.split("_")[0].to_s
+            cls = scope_string.capitalize.constantize
+            scope_object = cls.find( self.send(scope_string).id)
+            if scope_object.respond_to?(:nested_set_lock)
+              begin
+                scope_object.reload
+                raise NestedSetLockError if self.site.action_in_progress
+                scope_object.update_attribute(:nested_set_lock, true)
+                yield
+              ensure
+                scope_object.update_attribute(:nested_set_lock, false)
+              end
+            else
+              yield
+            end
+          end
 
           # Shorthand method for finding the left sibling and moving to the left of it.
           def move_left
@@ -671,90 +691,89 @@ module CollectiveIdea #:nodoc:
 
           def move_to(target, position)
             raise ActiveRecord::ActiveRecordError, "You cannot move a new node" if self.new_record?
-            raise NestedSetLockError if self.site.action_in_progress?
-            self.site.update_attribute(:action_in_progress, true)
-            res = run_callbacks :move do
-              transaction do
-                if target.is_a? self.class.base_class
-                  target.reload_nested_set
-                elsif position != :root
-                  # load object if node is not an object
-                  target = nested_set_scope.find(target)
+            
+            scope_lock_check{
+              res = run_callbacks :move do
+                transaction do
+                  if target.is_a? self.class.base_class
+                    target.reload_nested_set
+                  elsif position != :root
+                    # load object if node is not an object
+                    target = nested_set_scope.find(target)
+                  end
+                  self.reload_nested_set
+                  unless position == :root || move_possible?(target)
+                    raise ActiveRecord::ActiveRecordError, "Impossible move, target node cannot be inside moved tree."
+                  end
+                  bound = case position
+                    when :child;  target[right_column_name]
+                    when :left;   target[left_column_name]
+                    when :right;  target[right_column_name] + 1
+                    when :root;   1
+                    else raise ActiveRecord::ActiveRecordError, "Position should be :child, :left, :right or :root ('#{position}' received)."
+                  end
+              
+                  if bound > self[right_column_name]
+                    bound = bound - 1
+                    other_bound = self[right_column_name] + 1
+                  else
+                    other_bound = self[left_column_name] - 1
+                  end
+              
+                  # there would be no change
+                  return if bound == self[right_column_name] || bound == self[left_column_name]
+              
+                  # we have defined the boundaries of two non-overlapping intervals,
+                  # so sorting puts both the intervals and their boundaries in order
+                  a, b, c, d = [self[left_column_name], self[right_column_name], bound, other_bound].sort
+                  
+                  self.site.reload
+                  self.site.update_attribute(:action_in_progress, true)
+                  # select the rows in the model between a and d, and apply a lock
+                  unless self.class.acts_as_nested_set_options[:scope]
+                    self.class.base_class.find(:all,
+                      :select => primary_key_column_name,
+                      :conditions => ["#{quoted_left_column_name} >= :a and #{quoted_right_column_name} <= :d", {:a => a, :d => d}],
+                      :lock => true
+                    )
+                  else
+                    self.class.base_class.find(:all,
+                      :select => primary_key_column_name,
+                      :conditions => ["#{quoted_left_column_name} >= :a and #{quoted_right_column_name} <= :d and #{self.class.acts_as_nested_set_options[:scope]} = #{self.send(self.class.acts_as_nested_set_options[:scope])}", {:a => a, :d => d }],
+                      :lock => true
+                    )
+                  end
+              
+                  new_parent = case position
+                    when :child;  target.id
+                    when :root;   nil
+                    else          target[parent_column_name]
+                  end
+              
+                  nested_set_scope.update_all([
+                    "#{quoted_left_column_name} = CASE " +
+                      "WHEN #{quoted_left_column_name} BETWEEN :a AND :b " +
+                        "THEN #{quoted_left_column_name} + :d - :b " +
+                      "WHEN #{quoted_left_column_name} BETWEEN :c AND :d " +
+                        "THEN #{quoted_left_column_name} + :a - :c " +
+                      "ELSE #{quoted_left_column_name} END, " +
+                    "#{quoted_right_column_name} = CASE " +
+                      "WHEN #{quoted_right_column_name} BETWEEN :a AND :b " +
+                        "THEN #{quoted_right_column_name} + :d - :b " +
+                      "WHEN #{quoted_right_column_name} BETWEEN :c AND :d " +
+                        "THEN #{quoted_right_column_name} + :a - :c " +
+                      "ELSE #{quoted_right_column_name} END, " +
+                    "#{quoted_parent_column_name} = CASE " +
+                      "WHEN #{self.class.base_class.primary_key} = :id THEN :new_parent " +
+                      "ELSE #{quoted_parent_column_name} END",
+                    {:a => a, :b => b, :c => c, :d => d, :id => self.id, :new_parent => new_parent}
+                  ])
                 end
+                target.reload_nested_set if target
                 self.reload_nested_set
-                unless position == :root || move_possible?(target)
-                  raise ActiveRecord::ActiveRecordError, "Impossible move, target node cannot be inside moved tree."
-                end
-                bound = case position
-                  when :child;  target[right_column_name]
-                  when :left;   target[left_column_name]
-                  when :right;  target[right_column_name] + 1
-                  when :root;   1
-                  else raise ActiveRecord::ActiveRecordError, "Position should be :child, :left, :right or :root ('#{position}' received)."
-                end
-
-                if bound > self[right_column_name]
-                  bound = bound - 1
-                  other_bound = self[right_column_name] + 1
-                else
-                  other_bound = self[left_column_name] - 1
-                end
-
-                # there would be no change
-                return if bound == self[right_column_name] || bound == self[left_column_name]
-
-                # we have defined the boundaries of two non-overlapping intervals,
-                # so sorting puts both the intervals and their boundaries in order
-                a, b, c, d = [self[left_column_name], self[right_column_name], bound, other_bound].sort
-                
-                self.site.reload
-                self.site.update_attribute(:action_in_progress, true)
-                # select the rows in the model between a and d, and apply a lock
-                unless self.class.acts_as_nested_set_options[:scope]
-                  self.class.base_class.find(:all,
-                    :select => primary_key_column_name,
-                    :conditions => ["#{quoted_left_column_name} >= :a and #{quoted_right_column_name} <= :d", {:a => a, :d => d}],
-                    :lock => true
-                  )
-                else
-                  self.class.base_class.find(:all,
-                    :select => primary_key_column_name,
-                    :conditions => ["#{quoted_left_column_name} >= :a and #{quoted_right_column_name} <= :d and #{self.class.acts_as_nested_set_options[:scope]} = #{self.send(self.class.acts_as_nested_set_options[:scope])}", {:a => a, :d => d }],
-                    :lock => true
-                  )
-                end
-
-                new_parent = case position
-                  when :child;  target.id
-                  when :root;   nil
-                  else          target[parent_column_name]
-                end
-
-                nested_set_scope.update_all([
-                  "#{quoted_left_column_name} = CASE " +
-                    "WHEN #{quoted_left_column_name} BETWEEN :a AND :b " +
-                      "THEN #{quoted_left_column_name} + :d - :b " +
-                    "WHEN #{quoted_left_column_name} BETWEEN :c AND :d " +
-                      "THEN #{quoted_left_column_name} + :a - :c " +
-                    "ELSE #{quoted_left_column_name} END, " +
-                  "#{quoted_right_column_name} = CASE " +
-                    "WHEN #{quoted_right_column_name} BETWEEN :a AND :b " +
-                      "THEN #{quoted_right_column_name} + :d - :b " +
-                    "WHEN #{quoted_right_column_name} BETWEEN :c AND :d " +
-                      "THEN #{quoted_right_column_name} + :a - :c " +
-                    "ELSE #{quoted_right_column_name} END, " +
-                  "#{quoted_parent_column_name} = CASE " +
-                    "WHEN #{self.class.base_class.primary_key} = :id THEN :new_parent " +
-                    "ELSE #{quoted_parent_column_name} END",
-                  {:a => a, :b => b, :c => c, :d => d, :id => self.id, :new_parent => new_parent}
-                ])
+                self.update_depth if depth?
               end
-              target.reload_nested_set if target
-              self.reload_nested_set
-              self.update_depth if depth?
-            end
-          ensure
-            self.site.update_attribute(:action_in_progress, false)
+            }
           end
         end
       end # Base
