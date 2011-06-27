@@ -32,8 +32,7 @@ module CollectiveIdea #:nodoc:
           # * +:right_column+ - column name for right boundry data, default "rgt"
           # * +:depth_column+ - column name for level cache data, default "depth"
           # * +:scope+ - restricts what is to be considered a list. Given a symbol, it'll attach "_id"
-          #   (if it hasn't been already) and use that as the foreign key restriction. You
-          #   can also pass an array to scope by multiple attributes.
+          #   (if it hasn't been already) and use that as the foreign key restriction.
           #   Example: <tt>acts_as_nested_set :scope => [:notable_id, :notable_type]</tt>
           # * +:dependent+ - behavior for cascading destroy. If set to :destroy, all the
           #   child objects are destroyed alongside this object by calling their destroy
@@ -178,9 +177,8 @@ module CollectiveIdea #:nodoc:
           end
 
           def no_duplicates_for_columns?
-            scope_string = Array(acts_as_nested_set_options[:scope]).map do |c|
-              connection.quote_column_name(c)
-            end.push(nil).join(", ")
+            scope_string = scope_column_name || ""
+
             [quoted_left_column_name, quoted_right_column_name].all? do |column|
               # No duplicates
               unscoped.first(
@@ -193,8 +191,8 @@ module CollectiveIdea #:nodoc:
 
           # Wrapper for each_root_valid? that can deal with scope.
           def all_roots_valid?
-            if acts_as_nested_set_options[:scope]
-              roots.group_by{|record| scope_column_names.collect{|col| record.send(col.to_sym)}}.all? do |scope, grouped_roots|
+            if scope_column_name
+              roots.group_by{|record| record.send(scope_column_name.to_sym)}.all? do |scope, grouped_roots|
                 each_root_valid?(grouped_roots)
               end
             else
@@ -276,13 +274,14 @@ module CollectiveIdea #:nodoc:
           def after_move(*args, &block)
             set_callback :move, :after, *args, &block
           end
-            
+
           private
 
             def scope_for_rebuild(node)
-              scope_column_names.inject({}) do |hash, column_name|
-                hash[column_name] = node.send(column_name.to_sym)
-                hash
+              if scope_column_name
+                { scope_column_name => node.send(scope_column_name.to_sym) }
+              else
+                {}
               end
             end
 
@@ -318,8 +317,8 @@ module CollectiveIdea #:nodoc:
             acts_as_nested_set_options[:parent_column]
           end
 
-          def scope_column_names
-            Array(acts_as_nested_set_options[:scope])
+          def scope_column_name
+            acts_as_nested_set_options[:scope]
           end
 
           def depth_column_name
@@ -342,8 +341,8 @@ module CollectiveIdea #:nodoc:
             connection.quote_column_name(parent_column_name)
           end
 
-          def quoted_scope_column_names
-            scope_column_names.collect {|column_name| connection.quote_column_name(column_name) }
+          def quoted_scope_column_name
+            connection.quote_column_name(scope_column_name)
           end
 
           def quoted_depth_column_name
@@ -467,9 +466,7 @@ module CollectiveIdea #:nodoc:
 
           # Check if other model is in the same scope
           def same_scope?(other)
-            Array(acts_as_nested_set_options[:scope]).all? do |attr|
-              self.send(attr) == other.send(attr)
-            end
+            scope_column_name ? self.send(scope_column_name) == other.send(scope_column_name) : true
           end
 
           # Find the first sibling to the left
@@ -481,13 +478,14 @@ module CollectiveIdea #:nodoc:
           def right_sibling
             siblings.where("#{q_left} > ?", left).first
           end
-          
+
           # Raise exception if a move is in progress
           def  scope_lock_check
-            scope = self.class.acts_as_nested_set_options[:scope]
-            scope_string = scope.to_s.split("_")[0].to_s
-            cls = scope_string.capitalize.constantize
-            scope_object = cls.find( self.send(scope_string).id)
+            if scope_column_name
+              # get the model
+              cls = scope_column_name.to_s.split("_")[0].to_s.capitalize.constantize
+              scope_object = cls.find( self.send(scope_string).id)
+            end
             if scope_object.respond_to?(:nested_set_lock)
               begin
                 scope_object.reload
@@ -555,7 +553,7 @@ module CollectiveIdea #:nodoc:
           end
 
           def invalid_left_and_right
-            self.class.invalid_left_and_right.where( "#{self.class.quoted_table_name}.#{self.class.connection.quote_column_name(self.class.acts_as_nested_set_options[:scope]) } = #{self.send(self.class.acts_as_nested_set_options[:scope]) }")
+            self.class.invalid_left_and_right.where( "#{self.class.quoted_table_name}.#{ quoted_scope_column_name } = #{self.send(scope_column_name) }")
           end
 
           def duplicates_for_columns
@@ -569,7 +567,7 @@ module CollectiveIdea #:nodoc:
                 :select => "#{self.class.primary_key}, #{scope_string}#{column}, COUNT(#{column})",
                 :group => "#{scope_string}#{column}",
                 :having => "COUNT(#{column}) > 1",
-                :conditions => "#{self.class.connection.quote_column_name(self.class.acts_as_nested_set_options[:scope]) } = #{self.send(self.class.acts_as_nested_set_options[:scope]) }"
+                :conditions => "#{ quoted_scope_column_name } = #{self.send(scope_column_name) }"
               )
             end
             duplicates.flatten
@@ -594,7 +592,7 @@ module CollectiveIdea #:nodoc:
               node.save(:validate => false)
             end
 
-            self.class.send(:root_nodes_for_rebuild).where(self.class.acts_as_nested_set_options[:scope] => self[self.class.acts_as_nested_set_options[:scope] ]).each do |root_node|
+            self.class.send(:root_nodes_for_rebuild).where(scope_column_name => self[scope_column_name]).each do |root_node|
               # setup index for this scope
               set_left_and_rights.call(root_node)
             end
@@ -691,7 +689,7 @@ module CollectiveIdea #:nodoc:
 
           def move_to(target, position)
             raise ActiveRecord::ActiveRecordError, "You cannot move a new node" if self.new_record?
-            
+
             scope_lock_check{
               res = run_callbacks :move do
                 transaction do
@@ -712,44 +710,39 @@ module CollectiveIdea #:nodoc:
                     when :root;   1
                     else raise ActiveRecord::ActiveRecordError, "Position should be :child, :left, :right or :root ('#{position}' received)."
                   end
-              
+
                   if bound > self[right_column_name]
                     bound = bound - 1
                     other_bound = self[right_column_name] + 1
                   else
                     other_bound = self[left_column_name] - 1
                   end
-              
+
                   # there would be no change
                   return if bound == self[right_column_name] || bound == self[left_column_name]
-              
+
                   # we have defined the boundaries of two non-overlapping intervals,
                   # so sorting puts both the intervals and their boundaries in order
                   a, b, c, d = [self[left_column_name], self[right_column_name], bound, other_bound].sort
-                  
-                  self.site.reload
-                  self.site.update_attribute(:action_in_progress, true)
+
                   # select the rows in the model between a and d, and apply a lock
-                  unless self.class.acts_as_nested_set_options[:scope]
-                    self.class.base_class.find(:all,
-                      :select => primary_key_column_name,
-                      :conditions => ["#{quoted_left_column_name} >= :a and #{quoted_right_column_name} <= :d", {:a => a, :d => d}],
-                      :lock => true
-                    )
-                  else
-                    self.class.base_class.find(:all,
-                      :select => primary_key_column_name,
-                      :conditions => ["#{quoted_left_column_name} >= :a and #{quoted_right_column_name} <= :d and #{self.class.acts_as_nested_set_options[:scope]} = #{self.send(self.class.acts_as_nested_set_options[:scope])}", {:a => a, :d => d }],
-                      :lock => true
-                    )
+                  cond = ["#{quoted_left_column_name} >= #{a} and #{quoted_right_column_name} <= #{d}"]
+                  if scope_column_name
+                    cond << "#{scope_column_name} = #{self.send(scope_column_name)}"
                   end
-              
+                  self.class.base_class.find(:all,
+                    :select => primary_key_column_name,
+                    :conditions => cond,
+                    :lock => true
+                  )
+
+
                   new_parent = case position
                     when :child;  target.id
                     when :root;   nil
                     else          target[parent_column_name]
                   end
-              
+
                   nested_set_scope.update_all([
                     "#{quoted_left_column_name} = CASE " +
                       "WHEN #{quoted_left_column_name} BETWEEN :a AND :b " +

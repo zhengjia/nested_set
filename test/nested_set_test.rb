@@ -285,26 +285,26 @@ class NestedSetTest < ActiveSupport::TestCase
     child.update_attribute :organization_id, 'different'
     assert !root.is_or_is_ancestor_of?(child)
   end
-  
+
   def test_root_is_valid_with_scope
     ScopedCategory.update_all('organization_id = 1')
     root = ScopedCategory.root
     assert root.is_valid?
   end
-  
+
   def test_root_is_not_valid_with_scope
     ScopedCategory.update_all(:organization_id => 1, :lft => nil)
     root = ScopedCategory.root
     assert !root.is_valid?
   end
-  
+
   def test_root_rebuild
     ScopedCategory.update_all(:organization_id => 1, :lft => nil)
     root = ScopedCategory.root
     root.rebuild!
     assert root.is_valid?
   end
-  
+
   def test_is_or_is_descendant_of?
     assert categories(:child_1).is_or_is_descendant_of?(categories(:top_level))
     assert categories(:child_2_1).is_or_is_descendant_of?(categories(:top_level))
@@ -620,55 +620,6 @@ class NestedSetTest < ActiveSupport::TestCase
 
     r4.move_to_child_of(r2)
     assert Category.valid?
-  end
-
-  def test_multi_scoped_no_duplicates_for_columns?
-    assert_nothing_raised do
-      Note.no_duplicates_for_columns?
-    end
-  end
-
-  def test_multi_scoped_all_roots_valid?
-    assert_nothing_raised do
-      Note.all_roots_valid?
-    end
-  end
-
-  def test_multi_scoped
-    note1 = Note.create!(:body => "A", :notable_id => 2, :notable_type => 'Category')
-    note2 = Note.create!(:body => "B", :notable_id => 2, :notable_type => 'Category')
-    note3 = Note.create!(:body => "C", :notable_id => 2, :notable_type => 'Default')
-
-    assert_equal [note1, note2], note1.self_and_siblings
-    assert_equal [note3], note3.self_and_siblings
-  end
-
-  def test_multi_scoped_rebuild
-    root = Note.create!(:body => "A", :notable_id => 3, :notable_type => 'Category')
-    child1 = Note.create!(:body => "B", :notable_id => 3, :notable_type => 'Category')
-    child2 = Note.create!(:body => "C", :notable_id => 3, :notable_type => 'Category')
-
-    child1.move_to_child_of root
-    child2.move_to_child_of root
-
-    Note.update_all('lft = null, rgt = null')
-    Note.rebuild!
-
-    assert_equal Note.roots.find_by_body('A'), root
-    assert_equal [child1, child2], Note.roots.find_by_body('A').children
-  end
-
-  def test_same_scope_with_multi_scopes
-    assert_nothing_raised do
-      notes(:scope1).same_scope?(notes(:child_1))
-    end
-    assert notes(:scope1).same_scope?(notes(:child_1))
-    assert notes(:child_1).same_scope?(notes(:scope1))
-    assert !notes(:scope1).same_scope?(notes(:scope2))
-  end
-
-  def test_quoting_of_multi_scope_column_names
-    assert_equal ["\"notable_id\"", "\"notable_type\""], Note.quoted_scope_column_names
   end
 
   def test_equal_in_same_scope
