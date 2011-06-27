@@ -480,10 +480,11 @@ module CollectiveIdea #:nodoc:
           end
 
           # Raise exception if a move is in progress
-          def  scope_lock_check
+          def scope_lock_check
             if scope_column_name
+              scope_string = scope_column_name.to_s.split("_")[0]
               # get the model
-              cls = scope_column_name.to_s.split("_")[0].to_s.capitalize.constantize
+              cls = scope_string.capitalize.constantize
               scope_object = cls.find( self.send(scope_string).id)
             end
             if scope_object.respond_to?(:nested_set_lock)
