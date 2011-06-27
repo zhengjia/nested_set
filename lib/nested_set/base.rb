@@ -491,7 +491,7 @@ module CollectiveIdea #:nodoc:
             if scope_object.respond_to?(:nested_set_lock)
               begin
                 scope_object.reload
-                raise NestedSetLockError if self.site.action_in_progress
+                raise NestedSetLockError if scope_object.nested_set_lock
                 scope_object.update_attribute(:nested_set_lock, true)
                 yield
               ensure
@@ -727,8 +727,6 @@ module CollectiveIdea #:nodoc:
                   # so sorting puts both the intervals and their boundaries in order
                   a, b, c, d = [self[left_column_name], self[right_column_name], bound, other_bound].sort
                   
-                  self.site.reload
-                  self.site.update_attribute(:action_in_progress, true)
                   # select the rows in the model between a and d, and apply a lock
                   unless self.class.acts_as_nested_set_options[:scope]
                     self.class.base_class.find(:all,
