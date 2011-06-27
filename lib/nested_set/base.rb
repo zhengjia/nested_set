@@ -670,7 +670,7 @@ module CollectiveIdea #:nodoc:
 
           def move_to(target, position)
             raise ActiveRecord::ActiveRecordError, "You cannot move a new node" if self.new_record?
-            raise ActiveRecord::NestedSetLockError, "Action in progress" if self.action_in_progress?
+            raise ActiveRecord::NestedSetLockError, "Action in progress" if self.site.action_in_progress?
             
             
             self.update_attribute(:action_in_progress, true)
@@ -709,8 +709,9 @@ module CollectiveIdea #:nodoc:
                 # we have defined the boundaries of two non-overlapping intervals,
                 # so sorting puts both the intervals and their boundaries in order
                 a, b, c, d = [self[left_column_name], self[right_column_name], bound, other_bound].sort
-
-                self.update_attribute(:action_in_progress, true)
+                
+                self.site.reload
+                self.site.update_attribute(:action_in_progress, true)
                 # select the rows in the model between a and d, and apply a lock
                 unless self.class.acts_as_nested_set_options[:scope]
                   self.class.base_class.find(:all,
@@ -755,7 +756,7 @@ module CollectiveIdea #:nodoc:
               self.reload_nested_set
               self.update_depth if depth?
             ensure
-              self.update_attribute(:action_in_progress, false)
+              self.site.update_attribute(:action_in_progress, false)
             end
           end
         end
