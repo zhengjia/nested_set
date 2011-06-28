@@ -489,8 +489,8 @@ module CollectiveIdea #:nodoc:
               self.class.base_class.find(:all,
                 :select => primary_key_column_name,
                 :conditions => cond,
-                :lock => true
-              )
+                # :lock => true
+              ).lock("LOCK IN SHARE MODE")
               yield
             end
           end
