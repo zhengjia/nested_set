@@ -486,10 +486,10 @@ module CollectiveIdea #:nodoc:
                 cond = "#{scope_column_name} = #{self.send(scope_column_name)}"
               end
               self.reload_nested_set
-              self.class.base_class.find(:all,
+              self.class.base_class.lock("LOCK IN SHARE MODE").find(:all,
                 :select => primary_key_column_name,
                 :conditions => cond
-              ).lock("LOCK IN SHARE MODE")
+              )
               yield
             end
           end
