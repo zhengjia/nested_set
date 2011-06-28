@@ -488,8 +488,7 @@ module CollectiveIdea #:nodoc:
               self.reload_nested_set
               self.class.base_class.find(:all,
                 :select => primary_key_column_name,
-                :conditions => cond,
-                # :lock => true
+                :conditions => cond
               ).lock("LOCK IN SHARE MODE")
               yield
             end
