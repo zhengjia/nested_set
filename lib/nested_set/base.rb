@@ -32,7 +32,8 @@ module CollectiveIdea #:nodoc:
           # * +:right_column+ - column name for right boundry data, default "rgt"
           # * +:depth_column+ - column name for level cache data, default "depth"
           # * +:scope+ - restricts what is to be considered a list. Given a symbol, it'll attach "_id"
-          #   (if it hasn't been already) and use that as the foreign key restriction.
+          #   (if it hasn't been already) and use that as the foreign key restriction. You
+          #   can also pass an array to scope by multiple attributes.
           #   Example: <tt>acts_as_nested_set :scope => [:notable_id, :notable_type]</tt>
           # * +:dependent+ - behavior for cascading destroy. If set to :destroy, all the
           #   child objects are destroyed alongside this object by calling their destroy
@@ -177,8 +178,9 @@ module CollectiveIdea #:nodoc:
           end
 
           def no_duplicates_for_columns?
-            scope_string = scope_column_name || ""
-
+            scope_string = Array(acts_as_nested_set_options[:scope]).map do |c|
+              connection.quote_column_name(c)
+            end.push(nil).join(", ")
             [quoted_left_column_name, quoted_right_column_name].all? do |column|
               # No duplicates
               unscoped.first(
@@ -191,8 +193,8 @@ module CollectiveIdea #:nodoc:
 
           # Wrapper for each_root_valid? that can deal with scope.
           def all_roots_valid?
-            if scope_column_name
-              roots.group_by{|record| record.send(scope_column_name.to_sym)}.all? do |scope, grouped_roots|
+            if acts_as_nested_set_options[:scope]
+              roots.group_by{|record| scope_column_names.collect{|col| record.send(col.to_sym)}}.all? do |scope, grouped_roots|
                 each_root_valid?(grouped_roots)
               end
             else
@@ -278,10 +280,9 @@ module CollectiveIdea #:nodoc:
           private
 
             def scope_for_rebuild(node)
-              if scope_column_name
-                { scope_column_name => node.send(scope_column_name.to_sym) }
-              else
-                {}
+              scope_column_names.inject({}) do |hash, column_name|
+                hash[column_name] = node.send(column_name.to_sym)
+                hash
               end
             end
 
@@ -317,8 +318,8 @@ module CollectiveIdea #:nodoc:
             acts_as_nested_set_options[:parent_column]
           end
 
-          def scope_column_name
-            acts_as_nested_set_options[:scope]
+          def scope_column_names
+            Array(acts_as_nested_set_options[:scope])
           end
 
           def depth_column_name
@@ -341,8 +342,8 @@ module CollectiveIdea #:nodoc:
             connection.quote_column_name(parent_column_name)
           end
 
-          def quoted_scope_column_name
-            connection.quote_column_name(scope_column_name)
+          def quoted_scope_column_names
+            scope_column_names.collect {|column_name| connection.quote_column_name(column_name) }
           end
 
           def quoted_depth_column_name
@@ -466,7 +467,9 @@ module CollectiveIdea #:nodoc:
 
           # Check if other model is in the same scope
           def same_scope?(other)
-            scope_column_name ? self.send(scope_column_name) == other.send(scope_column_name) : true
+            Array(acts_as_nested_set_options[:scope]).all? do |attr|
+              self.send(attr) == other.send(attr)
+            end
           end
 
           # Find the first sibling to the left
@@ -481,8 +484,8 @@ module CollectiveIdea #:nodoc:
 
           def lock_check
             transaction do
-              if scope_column_name
-                cond = "#{scope_column_name} = #{self.send(scope_column_name)}"
+              if !scope_column_names.try(:empty?)
+                cond = scope_column_names.collect{ |scope_column_name| "#{scope_column_name} = #{self.send(scope_column_name)}"}.join(" OR ")
               else
                 cond = nil
               end
@@ -548,7 +551,7 @@ module CollectiveIdea #:nodoc:
           end
 
           def invalid_left_and_right
-            self.class.invalid_left_and_right.where( "#{self.class.quoted_table_name}.#{ quoted_scope_column_name } = #{self.send(scope_column_name) }")
+            self.class.invalid_left_and_right.where( "#{self.class.quoted_table_name}.#{self.class.connection.quote_column_name(self.class.acts_as_nested_set_options[:scope]) } = #{self.send(self.class.acts_as_nested_set_options[:scope]) }")
           end
 
           def duplicates_for_columns
@@ -562,7 +565,7 @@ module CollectiveIdea #:nodoc:
                 :select => "#{self.class.primary_key}, #{scope_string}#{column}, COUNT(#{column})",
                 :group => "#{scope_string}#{column}",
                 :having => "COUNT(#{column}) > 1",
-                :conditions => "#{ quoted_scope_column_name } = #{self.send(scope_column_name) }"
+                :conditions => "#{self.class.connection.quote_column_name(self.class.acts_as_nested_set_options[:scope]) } = #{self.send(self.class.acts_as_nested_set_options[:scope]) }"
               )
             end
             duplicates.flatten
@@ -587,7 +590,7 @@ module CollectiveIdea #:nodoc:
               node.save(:validate => false)
             end
 
-            self.class.send(:root_nodes_for_rebuild).where(scope_column_name => self[scope_column_name]).each do |root_node|
+            self.class.send(:root_nodes_for_rebuild).where(self.class.acts_as_nested_set_options[:scope] => self[self.class.acts_as_nested_set_options[:scope] ]).each do |root_node|
               # setup index for this scope
               set_left_and_rights.call(root_node)
             end
