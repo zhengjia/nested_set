@@ -650,30 +650,28 @@ module CollectiveIdea #:nodoc:
             return if right.nil? || left.nil? || skip_before_destroy
 
             lock_check do
-              self.class.base_class.transaction do
-                if acts_as_nested_set_options[:dependent] == :destroy
-                  descendants.each do |model|
-                    model.skip_before_destroy = true
-                    model.destroy
-                  end
-                else
-                  nested_set_scope.delete_all(["#{q_left} > ? AND #{q_right} < ?", left, right])
+              if acts_as_nested_set_options[:dependent] == :destroy
+                descendants.each do |model|
+                  model.skip_before_destroy = true
+                  model.destroy
                 end
-
-                # update lefts and rights for remaining nodes
-                diff = right - left + 1
-                nested_set_scope.update_all(
-                  ["#{quoted_left_column_name} = (#{quoted_left_column_name} - ?)", diff],
-                  ["#{quoted_left_column_name} > ?", right]
-                )
-                nested_set_scope.update_all(
-                  ["#{quoted_right_column_name} = (#{quoted_right_column_name} - ?)", diff],
-                  ["#{quoted_right_column_name} > ?", right]
-                )
-
-                # Don't allow multiple calls to destroy to corrupt the set
-                self.skip_before_destroy = true
+              else
+                nested_set_scope.delete_all(["#{q_left} > ? AND #{q_right} < ?", left, right])
               end
+
+              # update lefts and rights for remaining nodes
+              diff = right - left + 1
+              nested_set_scope.update_all(
+                ["#{quoted_left_column_name} = (#{quoted_left_column_name} - ?)", diff],
+                ["#{quoted_left_column_name} > ?", right]
+              )
+              nested_set_scope.update_all(
+                ["#{quoted_right_column_name} = (#{quoted_right_column_name} - ?)", diff],
+                ["#{quoted_right_column_name} > ?", right]
+              )
+
+              # Don't allow multiple calls to destroy to corrupt the set
+              self.skip_before_destroy = true
             end
           end
 
