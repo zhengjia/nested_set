@@ -483,16 +483,18 @@ module CollectiveIdea #:nodoc:
           end
 
           def lock_check
-            transaction do
-              if !scope_column_names.try(:empty?)
-                cond = scope_column_names.collect{ |scope_column_name| "#{scope_column_name} = #{self.send(scope_column_name)}"}.join(" OR ")
-              else
-                cond = nil
+            cond = []
+            if !scope_column_names.empty?
+              scope_column_names.each do |scope_column_name|
+                cond << "#{scope_column_name} = '#{self.send(scope_column_name)}'"
               end
+            end
+
+            transaction do
               self.reload_nested_set
               self.class.base_class.lock("LOCK IN SHARE MODE").find(:all,
                 :select => primary_key_column_name,
-                :conditions => cond
+                :conditions => cond.join(" OR ")
               )
               yield
             end
