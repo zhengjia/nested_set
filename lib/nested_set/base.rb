@@ -480,7 +480,7 @@ module CollectiveIdea #:nodoc:
           end
 
           # Raise exception if a move is in progress
-          def scope_lock_check
+          def lock_check
             if scope_column_name
               scope_string = scope_column_name.to_s.split("_")[0]
               # get the model
@@ -655,7 +655,7 @@ module CollectiveIdea #:nodoc:
           def destroy_descendants
             return if right.nil? || left.nil? || skip_before_destroy
 
-            scope_lock_check do
+            lock_check do
               reload_nested_set
               self.class.base_class.transaction do
                 if acts_as_nested_set_options[:dependent] == :destroy
@@ -693,7 +693,7 @@ module CollectiveIdea #:nodoc:
           def move_to(target, position)
             raise ActiveRecord::ActiveRecordError, "You cannot move a new node" if self.new_record?
 
-            scope_lock_check{
+            lock_check{
               res = run_callbacks :move do
                 transaction do
                   if target.is_a? self.class.base_class
