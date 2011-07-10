@@ -222,7 +222,7 @@ module CollectiveIdea #:nodoc:
               nodes_for_rebuild(node, node_scope).each{ |n| set_left_and_rights.call(n) }
               # set right
               node[right_column_name] = indices[node_scope] += 1
-              node.save!
+              node.save(:validate => false)
             end
 
             # Find root node(s)
