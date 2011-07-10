@@ -477,6 +477,25 @@ module CollectiveIdea #:nodoc:
           def right_sibling
             siblings.where("#{q_left} > ?", left).first
           end
+          
+          # Lock a subtree whose lfts and rgts are to be updated
+          def lock_check
+            cond = []
+            if !scope_column_names.empty?
+              scope_column_names.each do |scope_column_name|
+                cond << "#{scope_column_name} = '#{self.send(scope_column_name)}'"
+              end
+            end
+
+            transaction do
+              self.reload_nested_set
+              self.class.base_class.lock("LOCK IN SHARE MODE").find(:all,
+                :select => primary_key_column_name,
+                :conditions => cond.join(" OR ")
+              )
+              yield
+            end
+          end
 
           # Shorthand method for finding the left sibling and moving to the left of it.
           def move_left
@@ -576,9 +595,7 @@ module CollectiveIdea #:nodoc:
           # back to the left so the counts still work.
           def destroy_descendants
             return if right.nil? || left.nil? || skip_before_destroy
-            reload_nested_set
-
-            self.class.base_class.transaction do
+            lock_check do
               if acts_as_nested_set_options[:dependent] == :destroy
                 descendants.each do |model|
                   model.skip_before_destroy = true
@@ -601,7 +618,7 @@ module CollectiveIdea #:nodoc:
 
               # Don't allow multiple calls to destroy to corrupt the set
               self.skip_before_destroy = true
-            end
+            end  
           end
 
           # reload left, right, and parent
@@ -614,7 +631,7 @@ module CollectiveIdea #:nodoc:
             raise ActiveRecord::ActiveRecordError, "You cannot move a new node" if self.new_record?
 
             res = run_callbacks :move do
-              transaction do
+              lock_check do
                 if target.is_a? self.class.base_class
                   target.reload_nested_set
                 elsif position != :root
@@ -648,13 +665,6 @@ module CollectiveIdea #:nodoc:
                 # we have defined the boundaries of two non-overlapping intervals,
                 # so sorting puts both the intervals and their boundaries in order
                 a, b, c, d = [self[left_column_name], self[right_column_name], bound, other_bound].sort
-
-                # select the rows in the model between a and d, and apply a lock
-                self.class.base_class.find(:all,
-                  :select => primary_key_column_name,
-                  :conditions => ["#{quoted_left_column_name} >= :a and #{quoted_right_column_name} <= :d", {:a => a, :d => d}],
-                  :lock => true
-                )
 
                 new_parent = case position
                   when :child;  target.id
