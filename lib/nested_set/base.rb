@@ -489,10 +489,7 @@ module CollectiveIdea #:nodoc:
 
             transaction do
               self.reload_nested_set
-              self.class.base_class.lock("LOCK IN SHARE MODE").find(:all,
-                :select => primary_key_column_name,
-                :conditions => cond.join(" OR ")
-              )
+              self.class.base_class.lock.select(primary_key_column_name).where(cond.join(" OR "))
               yield
             end
           end
