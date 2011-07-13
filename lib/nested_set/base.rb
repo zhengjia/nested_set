@@ -582,7 +582,7 @@ module CollectiveIdea #:nodoc:
           def destroy_descendants
             return if right.nil? || left.nil? || skip_before_destroy
             self.class.base_class.transaction do
-              lock_check
+              lock_check("#{quoted_right_column_name} > #{right}")
               reload_nested_set
               if acts_as_nested_set_options[:dependent] == :destroy
                 descendants.each do |model|
